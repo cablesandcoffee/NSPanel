@@ -9,3 +9,5 @@ Work in progress:
 26/2
 Working to update design from beta to some kind of final. Better use of the entire screen, changing fonts and stuff like that to make it look cleaner. Finished with main page. Next step is to update rest of pages aswell. 
 
+27/2
+Updated home picture with custom made icons for ceiling and table lights. Inspiration for ceiling light icon is mom and dads art deco ceiling light. Thought you wanted to know that. 
