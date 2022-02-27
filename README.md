@@ -1,4 +1,11 @@
 # NSPanel
 
 My NSPanel project. I'm using Openhab so the solution is made with mqtt since I can't use the Home Assistant API.
+Right now I just have time to upload the files that I use but the plan is put together some kind of installation instruction.
+
+
+Work in progress:
+
+26/2
+Working to update design from beta to some kind of final. Better use of the entire screen, changing fonts and stuff like that to make it look cleaner. Finished with main page. Next step is to update rest of pages aswell. 
 
