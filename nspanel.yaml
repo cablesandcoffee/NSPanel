@@ -2164,7 +2164,7 @@ display:
     # A little fun...
     on_setup:
       then:
-         - lambda: 'id(disp1).goto_page("page1");'
+         - lambda: 'id(disp1).goto_page("bootscreen");'
          - lambda: 'id(disp1).set_component_text("home.room", id(currentroom).c_str());'
          - lambda: 'id(disp1).set_component_text("home.mode", id(mode).c_str());'
 
