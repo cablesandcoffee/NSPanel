@@ -11,3 +11,6 @@ Working to update design from beta to some kind of final. Better use of the enti
 
 27/2
 Updated home picture with custom made icons for ceiling and table lights. Inspiration for ceiling light icon is mom and dads art deco ceiling light. Thought you wanted to know that. 
+
+14/3
+Updated all files. Changed screensaver solution in tft file. Added MMI features for when using the physical switches. All pages updated to cleaner design. 
