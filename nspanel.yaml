@@ -1,7 +1,7 @@
 # Set some variables for convenience
 substitutions:
-  node_name: nsp-livingroom
-  device_name: NSPanel Livingroom
+  node_name: nsp-kitchen
+  device_name: NSP Kitchen
 
 
 external_components:
@@ -23,18 +23,21 @@ wifi:
 
 # Enable logging
 logger:
-
+  level: DEBUG
+  logs:
+    mqtt.component: NONE
+    mqtt.client: NONE
 # Enable wireless updates
 ota:
 
 mqtt:
-  broker: 192.168.x.x
-  username: username
-  password: password
+  broker: 192.168.32.2
+  username: openhabian
+  password: Superjanne!1
   id: mqtt_client
   discovery: false
   will_message:
-  log_topic: null
+#  log_topic: null
   
 time:
   - platform: sntp
@@ -47,7 +50,14 @@ time:
               auto time_text = id(sntp_time).now().strftime("%H:%M");
               id(disp1).set_component_text("t_time", time_text.c_str());
 
-# A reboot button is always useful
+#  - platform: sntp
+#    on_time:
+#     # Every 5 minutes
+#      - seconds: 0
+#        minutes: /2
+#       then:
+#          - lambda: 'id(disp1)->upload_tft();'
+
 globals:
    - id: device
      type: std::string
@@ -92,6 +102,7 @@ script:
   - id: update_room
     then:
         - lambda: |-
+        
             if (id(currentroom) == "Kitchen") {
               if (id(mode) == "Sound" ) {
                 id(disp1).set_component_value("home.n_bright", id(oh_kitchen_speaker_volume).state);
@@ -322,6 +333,15 @@ script:
               }
               
             }
+            if (id(relay_1).state == false or id(relay_2).state == false) {
+              if (id(currentroom) == id(device).c_str()) {
+                id(disp1).show_component("b_power");
+              }
+              else {
+                id(disp1).hide_component("b_power");
+              }
+            }
+            
             
   - id: update_mode
     then:
@@ -360,11 +380,11 @@ script:
             if (id(mode) == "Sound") {
               id(disp1).set_component_value("home.n_kelvin", id(soundaverage));
             }
-     
-button:
-  - platform: restart
-    internal: true
-    name: Restart $device_name
+# A reboot button is always useful
+#button:
+#  - platform: restart
+#    internal: true
+#    name: Restart $device_name
 
 # Define some inputs
 binary_sensor:
@@ -375,7 +395,7 @@ binary_sensor:
       number: 14
       inverted: true
     on_click:
-      - switch.toggle: relay_1
+     - switch.toggle: relay_1
 
   - platform: gpio
     internal: true
@@ -385,7 +405,6 @@ binary_sensor:
       inverted: true
     on_click:
       - switch.toggle: relay_2
-
 
   - platform: nextion
     internal: true
@@ -398,9 +417,9 @@ binary_sensor:
         
   - platform: nextion
     internal: true
-    name: $device_name Click Button
-    page_id: 2
-    component_id: 23
+    name: $device_name Click Screensaver
+    page_id: 3
+    component_id: 7
     on_press:
       then:
         - lambda: |-
@@ -411,15 +430,38 @@ binary_sensor:
 
         - script.execute: update_room
         - script.execute: update_mode
+        
+  - platform: nextion
+    internal: true
+    name: $device_name Click Vacuum
+    page_id: 3
+    component_id: 8
+    on_release:
+      then:
+        - lambda: |-
+            if (id(currentroom) == "Kitchen") {
+              id(mqtt_client).publish("oh/vacuum/kitchen", "ON");
+            }
+            else if (id(currentroom) == "Livingroom") {
+              id(mqtt_client).publish("oh/vacuum/livingroom", "ON");
+            }
+            else if (id(currentroom) == "Bedroom") {
+              id(mqtt_client).publish("oh/vacuum/bedroom", "ON");
+            }
+            else if (id(currentroom) == "Entryway") {
+              id(mqtt_client).publish("oh/vacuum/entryway", "ON");
+            }
+              else if (id(currentroom) == "Bathroom") {
+                id(mqtt_client).publish("oh/vacuum/bathroom", "ON");
+              }
 
-      
   - platform: nextion
     internal: true
     name: $device_name Button 1 UP
     id: nsp_b1up
     page_id: 2
     component_id: 3
-    on_press:
+    on_release:
       then:
         - lambda: |-
             int a = 0;
@@ -474,7 +516,7 @@ binary_sensor:
     id: nsp_b1down
     page_id: 2
     component_id: 5
-    on_press:
+    on_release:
       then:
         - lambda: |-
             int a = 0;
@@ -535,7 +577,7 @@ binary_sensor:
     id: nsp_b2up
     page_id: 2
     component_id: 4
-    on_press:
+    on_release:
       then:
         - lambda: |-
             int a = 0;
@@ -602,7 +644,7 @@ binary_sensor:
     id: nsp_b2down
     page_id: 2
     component_id: 6
-    on_press:
+    on_release:
       then:
         - lambda: |-
             int a = 0;
@@ -674,7 +716,7 @@ binary_sensor:
     id: nsp_b3up
     page_id: 2
     component_id: 17
-    on_press:
+    on_release:
       then:
         - lambda: |-
             if (id(mode) == "All Lights") {
@@ -763,7 +805,7 @@ binary_sensor:
     id: nsp_b3down
     page_id: 2
     component_id: 19
-    on_press:
+    on_release:
       then:
         - lambda: |-
             if (id(mode) == "All Lights") {
@@ -847,6 +889,7 @@ binary_sensor:
                 //Volume is 0 can't decrease.
               }  
             }
+
             
   - platform: nextion
     internal: true
@@ -854,7 +897,7 @@ binary_sensor:
     id: nsp_b4up
     page_id: 2
     component_id: 18
-    on_press:
+    on_release:
       then:
         - lambda: |-
             if (id(mode) == "All Lights") {
@@ -919,7 +962,7 @@ binary_sensor:
     id: nsp_b4down
     page_id: 2
     component_id: 20
-    on_press:
+    on_release:
       then:
         - lambda: |-
             if (id(mode) == "All Lights") {
@@ -1022,6 +1065,7 @@ binary_sensor:
         - script.execute: update_room
 
   - platform: nextion
+    internal: true
     name: $device_name Current Room
     id: nsp_currentroom
     page_id: 2
@@ -1030,23 +1074,23 @@ binary_sensor:
       then:
         - lambda: 'id(disp1).goto_page(id(currentroom).c_str());'
         
-  - platform: nextion
-    internal: true
-    name: $device_name Time
-    id: nsp_time
-    page_id: 2
-    component_id: 9
-    on_release:
-      then:
-        - lambda: 'id(disp1).goto_page("settings");'
+#  - platform: nextion
+#    internal: true
+#    name: $device_name Time
+#    id: nsp_time
+#    page_id: 2
+#    component_id: 9
+#    on_release:
+#      then:
+#        - lambda: 'id(disp1).goto_page("settings");'
 
   - platform: nextion
     internal: true
     name: $device_name Event Button
     id: event_button
     page_id: 2
-    component_id: 22
-    on_press:
+    component_id: 26
+    on_release:
       then:
         - lambda: |-     
             if (id(event) == "unlock") {
@@ -1081,7 +1125,7 @@ binary_sensor:
     id: nsp_ceiling
     page_id: 2
     component_id: 1
-    on_press:
+    on_release:
       then:
         - lambda: |-
             if (id(currentroom) == "Kitchen") {
@@ -1135,7 +1179,7 @@ binary_sensor:
     id: nsp_table
     page_id: 2
     component_id: 2
-    on_press:
+    on_release:
       then:
         - lambda: |-
             if (id(currentroom) == "Kitchen") {
@@ -1188,6 +1232,17 @@ binary_sensor:
               }
 
             }
+            
+  - platform: nextion
+    internal: true
+    name: $device_name Ceiling Power
+    id: ceiling_power
+    page_id: 2
+    component_id: 24
+    on_release:
+      then:
+        - switch.turn_on: relay_1
+        - switch.turn_on: relay_2
         
   - platform: nextion
     internal: true
@@ -1200,85 +1255,7 @@ binary_sensor:
         - lambda: |-     
               id(mqtt_client).publish("oh/coffee/brew", "1");
               
-  - platform: nextion
-    name: $device_name 1 Cup
-    id: coffee_1
-    page_id: 9
-    component_id: 4
-    on_release:
-      then:
-        - lambda: |-     
-              id(mqtt_client).publish("oh/coffee/standardcups", "1");
-              
-  - platform: nextion
-    name: $device_name 2 Cup
-    id: coffee_2
-    page_id: 9
-    component_id: 5
-    on_release:
-      then:
-        - lambda: |-     
-              id(mqtt_client).publish("oh/coffee/standardcups", "2");
 
-  - platform: nextion
-    name: $device_name 3 Cup
-    id: coffee_3
-    page_id: 9
-    component_id: 6
-    on_release:
-      then:
-        - lambda: |-     
-              id(mqtt_client).publish("oh/coffee/standardcups", "3");
-
-  - platform: nextion
-    name: $device_name 4 Cup
-    id: coffee_4
-    page_id: 9
-    component_id: 7
-    on_release:
-      then:
-        - lambda: |-     
-              id(mqtt_client).publish("oh/coffee/standardcups", "4");
-
-  - platform: nextion
-    name: $device_name 5 Cup
-    id: coffee_5
-    page_id: 9
-    component_id: 8
-    on_release:
-      then:
-        - lambda: |-     
-              id(mqtt_client).publish("oh/coffee/standardcups", "5");
-
-  - platform: nextion
-    name: $device_name 6 Cup
-    id: coffee_6
-    page_id: 9
-    component_id: 9
-    on_release:
-      then:
-        - lambda: |-     
-              id(mqtt_client).publish("oh/coffee/standardcups", "6");
-
-  - platform: nextion
-    name: $device_name 7 Cup
-    id: coffee_7
-    page_id: 9
-    component_id: 10
-    on_release:
-      then:
-        - lambda: |-     
-              id(mqtt_client).publish("oh/coffee/standardcups", "7");
-
-  - platform: nextion
-    name: $device_name 8 Cup
-    id: coffee_8
-    page_id: 9
-    component_id: 11
-    on_release:
-      then:
-        - lambda: |-     
-              id(mqtt_client).publish("oh/coffee/standardcups", "8");            
 
   - platform: nextion
     internal: true
@@ -1310,36 +1287,7 @@ binary_sensor:
             else {
                 id(mqtt_client).publish("oh/kitchen/eggboiler", "1");
             }
-  - platform: nextion
-    internal: true
-    name: $device_name LR TV
-    id: nsp_lr_tv
-    page_id: 5
-    component_id: 5
-    on_release:
-      then:
-        - lambda: |-
-            if (id(oh_livingroom_tv).state == 1) { 
-                id(mqtt_client).publish("oh/livingroom/tv", "0");
-              }
-            else {
-                id(mqtt_client).publish("oh/livingroom/tv", "1");
-            }
-  - platform: nextion
-    internal: true
-    name: $device_name LR TV Mute
-    id: nsp_lr_tvmute
-    page_id: 5
-    component_id: 7
-    on_release:
-      then:
-        - lambda: |-
-            if (id(oh_livingroom_tv_mute).state == 1) { 
-                id(mqtt_client).publish("oh/livingroom/tv/mute", "0");
-              }
-            else {
-                id(mqtt_client).publish("oh/livingroom/tv/mute", "1");
-            }
+
   - platform: nextion
     internal: true
     name: $device_name LR Stereo
@@ -1453,37 +1401,52 @@ sensor:
         - lambda: |-    
             int a = x;
             id(mqtt_client).publish("oh/alarm", esphome::to_string(a));
+            
+  - platform: nextion
+    internal: true
+    nextion_id: disp1
+    name: "Variable Coffee Cups"
+    variable_name: vaCoffee
+    on_value:
+      then:
+        - lambda: |-    
+            int a = x;
+            id(mqtt_client).publish("oh/coffee/standardcups", esphome::to_string(a));
+            
+
+            
     
-  - platform: wifi_signal
-    internal: true
-    name: $device_name WiFi Signal
-    update_interval: 60s
+#  - platform: wifi_signal
+#    internal: true
+#    name: $device_name WiFi Signal
+#    update_interval: 60s
 
-  - platform: ntc
-    internal: true
-    id: temperature
-    sensor: resistance_sensor
-    calibration:
-      b_constant: 3950
-      reference_temperature: 25°C
-      reference_resistance: 10kOhm
-    name: $device_name Temperature
+#  - platform: ntc
+#    internal: true
+#    id: temperature
+#    sensor: resistance_sensor
+#   calibration:
+#      b_constant: 3950
+#      reference_temperature: 25°C
+#      reference_resistance: 10kOhm
+#    name: $device_name Temperature
 
-  - platform: resistance
-    internal: true
-    id: resistance_sensor
-    sensor: ntc_source
-    configuration: DOWNSTREAM
-    resistor: 11.2kOhm
+#  - platform: resistance
+#    internal: true
+#    id: resistance_sensor
+#    sensor: ntc_source
+#    configuration: DOWNSTREAM
+#   resistor: 11.2kOhm
 
-  - platform: adc
-    internal: true
-    id: ntc_source
-    pin: 38
-    update_interval: 10s
-    attenuation: 11db
+#  - platform: adc
+#    internal: true
+#    id: ntc_source
+#    pin: 38
+#    update_interval: 10s
+#    attenuation: 11db
 
   - platform: mqtt_subscribe
+    internal: true
     name: "Openhab All Brightness"
     id: oh_all_brightness
     topic: oh/all_brightness
@@ -1500,6 +1463,7 @@ sensor:
 
             
   - platform: mqtt_subscribe
+    internal: true
     name: "Openhab All Kelvin"
     id: oh_all_kelvin
     topic: oh/all_kelvin
@@ -1515,6 +1479,7 @@ sensor:
             }
             
   - platform: mqtt_subscribe
+    internal: true
     name: "Openhab Ready for Coffee"
     id: oh_readyforcoffee
     topic: oh/coffee/readyforcoffee
@@ -1528,6 +1493,7 @@ sensor:
 
 
   - platform: mqtt_subscribe
+    internal: true
     name: "Standard Cups"
     id: oh_standardcups
     topic: oh/coffee/standardcups
@@ -1616,13 +1582,20 @@ sensor:
             }
 
   - platform: mqtt_subscribe
+    internal: true
     name: "Kitchen Ceiling"
     id: oh_kitchen_ceiling
     topic: oh/kitchen/ceiling
     on_value:
       then: 
         - lambda: |-
-            if (id(currentroom) == "Kitchen") {
+        
+            if (id(currentroom) == id(device).c_str() and (id(relay_1).state == false or id(relay_2).state == false)) {
+                //Checking if any of the relays are off and if the light subject to change is connected to one of these relays.
+                id(disp1).show_component("b_power");
+            }
+        
+            else if (id(currentroom) == "Kitchen") {
               if (id(oh_kitchen_ceiling).state >= 1 ) { 
                 id(disp1).set_component_value("b_ceiling", 1); 
                 id(disp1).set_component_value("home.n_ceiling", x);
@@ -1638,13 +1611,20 @@ sensor:
             }
     
   - platform: mqtt_subscribe
+    internal: true
     name: "Kitchen Table"
     id: oh_kitchen_table
     topic: oh/kitchen/table
     on_value:
       then: 
         - lambda: |-
-            if (id(currentroom) == "Kitchen") {
+        
+            if (id(currentroom) == id(device).c_str() and (id(relay_1).state == false or id(relay_2).state == false)) {
+                //Checking if any of the relays are off and if the light subject to change is connected to one of these relays.
+                id(disp1).show_component("b_power");
+            }
+        
+            else if (id(currentroom) == "Kitchen") {
               if (id(oh_kitchen_table).state >= 1 ) { 
                 id(disp1).set_component_value("b_ceiling", 1); 
                 id(disp1).set_component_value("home.n_ceiling", x);
@@ -1659,6 +1639,7 @@ sensor:
             }
             
   - platform: mqtt_subscribe
+    internal: true
     name: "Kitchen Ledstrip"
     id: oh_kitchen_ledstrip
     topic: oh/kitchen/ledstrip
@@ -1681,6 +1662,7 @@ sensor:
 
 #Livingroom
   - platform: mqtt_subscribe
+    internal: true
     name: "Livingroom Lady"
     id: oh_livingroom_lady
     topic: oh/livingroom/lady
@@ -1702,6 +1684,7 @@ sensor:
             }
             
   - platform: mqtt_subscribe
+    internal: true
     name: "Livingroom Window"
     id: oh_livingroom_window
     topic: oh/livingroom/window
@@ -1723,6 +1706,7 @@ sensor:
             }
             
   - platform: mqtt_subscribe
+    internal: true
     name: "Livingroom Globe"
     id: oh_livingroom_globe
     topic: oh/livingroom/globe
@@ -1745,13 +1729,19 @@ sensor:
 #Bedroom
 
   - platform: mqtt_subscribe
+    internal: true
     name: "Bedroom Ceiling"
     id: oh_bedroom_ceiling
     topic: oh/bedroom/ceiling
     on_value:
       then: 
         - lambda: |-
-            if (id(currentroom) == "Bedroom") {
+            if (id(currentroom) == id(device).c_str() and (id(relay_1).state == false or id(relay_2).state == false)) {
+                //Checking if any of the relays are off and if the light subject to change is connected to one of these relays.
+                id(disp1).show_component("b_power");
+            }
+        
+            else if (id(currentroom) == "Bedroom") {
               if (id(oh_bedroom_ceiling).state >= 1 ) { 
                 id(disp1).set_component_value("b_ceiling", 1); 
                 id(disp1).set_component_value("home.n_ceiling", x);
@@ -1767,6 +1757,7 @@ sensor:
             }
             
   - platform: mqtt_subscribe
+    internal: true
     name: "Bedroom Ledstrip"
     id: oh_bedroom_ledstrip
     topic: oh/bedroom/ledstrip
@@ -1788,6 +1779,7 @@ sensor:
             } 
 
   - platform: mqtt_subscribe
+    internal: true
     name: "Bedroom Window"
     id: oh_bedroom_window
     topic: oh/bedroom/window
@@ -1809,6 +1801,7 @@ sensor:
             } 
 
   - platform: mqtt_subscribe
+    internal: true
     name: "Bedroom Moon"
     id: oh_bedroom_moon
     topic: oh/bedroom/moon
@@ -1830,6 +1823,7 @@ sensor:
             } 
 
   - platform: mqtt_subscribe
+    internal: true
     name: "Bedroom Mirror"
     id: oh_bedroom_mirror
     topic: oh/bedroom/mirror
@@ -1853,13 +1847,20 @@ sensor:
 #Entryway
 
   - platform: mqtt_subscribe
+    internal: true
     name: "Entryway Ceiling"
     id: oh_entryway_ceiling
     topic: oh/entryway/ceiling
     on_value:
       then: 
         - lambda: |-
-            if (id(currentroom) == "Entryway") {
+        
+            if (id(currentroom) == id(device).c_str() and (id(relay_1).state == false or id(relay_2).state == false)) {
+                //Checking if any of the relays are off and if the light subject to change is connected to one of these relays.
+                id(disp1).show_component("b_power");
+            }
+        
+            else if (id(currentroom) == "Entryway") {
               if (id(oh_entryway_ceiling).state >= 1 ) { 
                 id(disp1).set_component_value("b_ceiling", 1); 
                 id(disp1).set_component_value("home.n_ceiling", x);
@@ -1877,13 +1878,19 @@ sensor:
 #Bathroom
 
   - platform: mqtt_subscribe
+    internal: true
     name: "Bathroom Ceiling"
     id: oh_bathroom_ceiling
     topic: oh/bathroom/ceiling
     on_value:
       then: 
         - lambda: |-
-            if (id(currentroom) == "Bathroom") {
+            if (id(currentroom) == id(device).c_str() and (id(relay_1).state == false or id(relay_2).state == false)) {
+                //Checking if any of the relays are off and if the light subject to change is connected to one of these relays.
+                id(disp1).show_component("b_power");
+            }
+        
+            else if (id(currentroom) == "Bathroom") {
               if (id(oh_bathroom_ceiling).state >= 1 ) { 
                 id(disp1).set_component_value("b_ceiling", 1); 
                 id(disp1).set_component_value("home.n_ceiling", x);
@@ -1898,6 +1905,7 @@ sensor:
               }
             }
   - platform: mqtt_subscribe
+    internal: true
     name: "Bathroom Mirror"
     id: oh_bathroom_mirror
     topic: oh/bathroom/mirror
@@ -1919,6 +1927,7 @@ sensor:
             }
 #Switches
   - platform: mqtt_subscribe
+    internal: true
     name: "Kitchen Coffee"
     id: oh_kitchen_coffee
     topic: oh/kitchen/coffee
@@ -1928,6 +1937,7 @@ sensor:
             id(disp1).set_component_value("Kitchen.b_coffee", x);
 
   - platform: mqtt_subscribe
+    internal: true
     name: "Kitchen Eggboiler"
     id: oh_kitchen_eggboiler
     topic: oh/kitchen/eggboiler
@@ -1937,6 +1947,7 @@ sensor:
             id(disp1).set_component_value("Kitchen.b_egg", x);
             
   - platform: mqtt_subscribe
+    internal: true
     name: "Livingroom TV"
     id: oh_livingroom_tv
     topic: oh/livingroom/tv
@@ -1946,6 +1957,7 @@ sensor:
             id(disp1).set_component_value("Livingroom.b_tv", x);
             
   - platform: mqtt_subscribe
+    internal: true
     name: "Livingroom TV Mute"
     id: oh_livingroom_tv_mute
     topic: oh/livingroom/tv/mute
@@ -1955,6 +1967,7 @@ sensor:
             id(disp1).set_component_value("Livingroom.b_mute", x);
             
   - platform: mqtt_subscribe
+    internal: true
     name: "Livingroom Stereo"
     id: oh_livingroom_stereo
     topic: oh/livingroom/stereo
@@ -1964,6 +1977,7 @@ sensor:
             id(disp1).set_component_value("Livingroom.b_stereo", x);
             
   - platform: mqtt_subscribe
+    internal: true
     name: "Bedroom OldTV"
     id: oh_bedroom_oldtv
     topic: oh/bedroom/oldtv
@@ -1971,15 +1985,15 @@ sensor:
       then: 
         - lambda: |-
             id(disp1).set_component_value("Livingroom.b_oldtv", x);
+
             
 #Switches Bedroom
 
-
-
-            
+        
 #Speakers
 
   - platform: mqtt_subscribe
+    internal: true
     name: "Kitchen Speaker"
     id: oh_kitchen_speaker_volume
     topic: oh/kitchen/speaker/volume
@@ -1996,6 +2010,7 @@ sensor:
 
             
   - platform: mqtt_subscribe
+    internal: true
     name: "Livingroom Speaker"
     id: oh_livingroom_speaker_volume
     topic: oh/livingroom/speaker/volume
@@ -2011,6 +2026,7 @@ sensor:
         - script.execute: speaker_average
             
   - platform: mqtt_subscribe
+    internal: true
     name: "Bedroom Speaker"
     id: oh_bedroom_speaker_volume
     topic: oh/bedroom/speaker/volume
@@ -2026,6 +2042,7 @@ sensor:
         - script.execute: speaker_average
             
   - platform: mqtt_subscribe
+    internal: true
     name: "Entryway Speaker"
     id: oh_entryway_speaker_volume
     topic: oh/entryway/speaker/volume
@@ -2042,6 +2059,7 @@ sensor:
             
             
   - platform: mqtt_subscribe
+    internal: true
     name: "Bathroom Speaker"
     id: oh_bathroom_speaker_volume
     topic: oh/bathroom/speaker/volume
@@ -2058,6 +2076,7 @@ sensor:
 
               
   - platform: mqtt_subscribe
+    internal: true
     name: "Outside Temperature"
     id: oh_temp
     topic: oh/temp
@@ -2069,6 +2088,7 @@ sensor:
 
 text_sensor:
   - platform: mqtt_subscribe
+    internal: true
     name: "Event"
     id: oh_event
     topic: oh/event
@@ -2093,7 +2113,17 @@ text_sensor:
             id(disp1).goto_page("alarm");
             id(event) = x;
           }
-
+          
+  - platform: nextion
+    internal: true
+    nextion_id: disp1
+    name: "Variable TV"
+    id: oh_tvremote
+    component_name: vaTV
+    on_value:
+      then:
+        - lambda: |-    
+              id(mqtt_client).publish("oh/livingroom/tvremote", x.c_str());
 
 # Define some outputs
 switch:
@@ -2104,12 +2134,37 @@ switch:
     id: relay_1
     pin:
       number: 22
+    on_turn_off:
+      then:
+        lambda: |-
+          if (id(currentroom) == id(device).c_str()) {
+           id(disp1).show_component("b_power");
+          }
+    on_turn_on: 
+      then:
+        lambda: |-
+         if (id(relay_1).state == true and id(relay_2).state == true) {
+            id(disp1).hide_component("b_power");
+          }
+      
   - platform: gpio
     internal: true
     name: $device_name Relay 2
     id: relay_2
     pin:
       number: 19
+    on_turn_off:
+      then:
+       lambda: |-
+          if (id(currentroom) == id(device).c_str()) {
+            id(disp1).show_component("b_power");
+          }
+    on_turn_on: 
+      then:
+        lambda: |-
+          if (id(relay_1).state == true and id(relay_2).state == true) {
+            id(disp1).hide_component("b_power");
+          }
 
   # Pin 4 always needs to be on to power up the display
   - platform: gpio
@@ -2121,32 +2176,32 @@ switch:
       inverted: true
     restore_mode: ALWAYS_ON
 
-number:
-  platform: template
-  internal: true
-  name: $device_name Brightness
-  id: brightness
-  entity_category: config
-  unit_of_measurement: '%'
-  min_value: 0
-  max_value: 100
-  step: 1
-  initial_value: 30
-  set_action:
-    then:
-      - lambda: 'id(disp1).set_backlight_brightness(x/100);'
+#number:
+#  platform: template
+#  internal: true
+#  name: $device_name Brightness
+#  id: brightness
+#  entity_category: config
+#  unit_of_measurement: '%'
+#  min_value: 0
+#  max_value: 100
+#  step: 1
+#  initial_value: 30
+#  set_action:
+#    then:
+#      - lambda: 'id(disp1).set_backlight_brightness(x/100);'
 
 # Configure the internal bleeper
-output:
-  - platform: ledc
-    id: buzzer_out
-    pin:
-      number: 21
+#output:
+#  - platform: ledc
+#    id: buzzer_out
+#    pin:
+#      number: 21
 
 # Enable ringtone music support
-rtttl:
-  id: buzzer
-  output: buzzer_out
+#rtttl:
+#  id: buzzer
+#  output: buzzer_out
 
 # Configure UART for communicating with the screen
 uart:
@@ -2160,11 +2215,10 @@ display:
   - platform: nextion
     id: disp1
     uart_id: tf_uart
-    tft_url: http://192.168.x.x:8080/hmi.tft
+    tft_url: http://192.168.32.21:8080/hmi.tft
     # A little fun...
     on_setup:
       then:
          - lambda: 'id(disp1).goto_page("bootscreen");'
          - lambda: 'id(disp1).set_component_text("home.room", id(currentroom).c_str());'
          - lambda: 'id(disp1).set_component_text("home.mode", id(mode).c_str());'
-
