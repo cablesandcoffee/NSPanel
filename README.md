@@ -14,3 +14,6 @@ Updated home picture with custom made icons for ceiling and table lights. Inspir
 
 14/3
 Updated all files. Changed screensaver solution in tft file. Added MMI features for when using the physical switches. All pages updated to cleaner design. 
+
+27/3
+Added comments to yaml file
