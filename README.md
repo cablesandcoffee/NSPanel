@@ -3,7 +3,7 @@
 My NSPanel project. I'm using Openhab so the solution is made with mqtt since I can't use the Home Assistant API.
 Right now I just have time to upload the files that I use but the plan is put together some kind of installation instruction.
 
-There are comments above almost every component trying to explain their purpose
+There are comments above almost every component in the yaml file trying to explain their purpose.
 
 Here are some simple instructions to setup your own lights so that is coresponds to your setup:
 
