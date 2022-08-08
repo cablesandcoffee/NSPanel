@@ -1,8 +1,18 @@
+#add new light
+#1 add mqtt component
+#2 add light to either table button or ceiling button component
+#3 update script update_room or update_mode remember to change array number to the same as the number of lights
+#4 add light to both up and down button for either ceiling or table up/downs
+
+#add new switch for room
+#1 add binary sensor (button on the display) triggers mqtt command
+#2 add mqtt component (updates button value when receiving a command)
+
 # Set some variables for convenience
 substitutions:
   node_name: nsp-kitchen
   device_name: NSP Kitchen
-
+  deviceroom: Kitchen
 
 external_components:
   - source: github://pr#2956
@@ -31,14 +41,15 @@ logger:
 ota:
 
 mqtt:
-  broker: 192.168.32.2
+  broker: 192.168.xx.xx
   username: username
   password: password
   id: mqtt_client
   discovery: false
   will_message:
 #  log_topic: null
-  
+
+#Sets text component in upper right corner to current time
 time:
   - platform: sntp
     id: sntp_time
@@ -50,26 +61,28 @@ time:
               auto time_text = id(sntp_time).now().strftime("%H:%M");
               id(disp1).set_component_text("t_time", time_text.c_str());
 
+# Backup way to upload tft file when not having a button to press to trigger the upload. Upload will start 2 min after boot.
 #  - platform: sntp
 #    on_time:
 #     # Every 5 minutes
 #      - seconds: 0
 #        minutes: /2
-#       then:
+#        then:
 #          - lambda: 'id(disp1)->upload_tft();'
 
 globals:
+     #This is the only thing that is unique for each panel. If panel is placed in Kitchen Set "initual_value" to Kitchen. 
+     #Used in rule to reset to main page after sleep rule among other things.
    - id: device
      type: std::string
      restore_value: no
-     initial_value: '"Kitchen"'
-     #Set initial value to the room where NSPanel is situated. Used in clickbutton rule to update on no touch resetting to main page.
+     initial_value: '"Kitchen"' #Lägg till $deviceroom
      
    - id: currentroom
      #type: char
      type: std::string
      restore_value: no
-     initial_value: '"Kitchen"'
+     initial_value: '"Kitchen"'  #Lägg till $deviceroom
      
    - id: mode
      #type: char
@@ -86,12 +99,12 @@ globals:
    - id: ceilingmax
      type: int
      restore_value: no
-     initial_value: '99'
+     initial_value: '30'
      
    - id: tablemax
      type: int
      restore_value: no
-     initial_value: '99'
+     initial_value: '30'
      
    - id: soundaverage
      type: int
@@ -99,7 +112,7 @@ globals:
      initial_value: '30'
 
 script:
-  - id: update_room
+  - id: update_room  #Used to re-write the icons and values on main page when a room change is done.
     then:
         - lambda: |-
         
@@ -108,7 +121,7 @@ script:
                 id(disp1).set_component_value("home.n_bright", id(oh_kitchen_speaker_volume).state);
               }
               if (id(oh_kitchen_ceiling).state == 0 and id(oh_kitchen_table).state == 0) { 
-                id(disp1).set_component_value("b_ceiling", 0); 
+                id(disp1).set_component_value("home.b_ceiling", 0); 
                 id(disp1).set_component_value("home.n_ceiling", 0);
 
               }
@@ -128,7 +141,7 @@ script:
                           max = arr[i];
 
                     id(ceilingmax) = max;
-                    id(disp1).set_component_value("b_ceiling", 1);
+                    id(disp1).set_component_value("home.b_ceiling", 1);
                     id(disp1).set_component_value("home.n_ceiling", id(ceilingmax));
               }
               
@@ -187,7 +200,7 @@ script:
                     id(disp1).set_component_value("home.n_table", id(tablemax));
               }
               //No ceiling lights in this room. Zeroising ceiling symbol
-              id(disp1).set_component_value("b_ceiling", 0); 
+              id(disp1).set_component_value("home.b_ceiling", 0); 
               id(disp1).set_component_value("home.n_ceiling", 0);
               
             }
@@ -196,7 +209,7 @@ script:
                 id(disp1).set_component_value("home.n_bright", id(oh_bedroom_speaker_volume).state);
               }
               if (id(oh_bedroom_ceiling).state == 0) { 
-                id(disp1).set_component_value("b_ceiling", 0); 
+                id(disp1).set_component_value("home.b_ceiling", 0); 
                 id(disp1).set_component_value("home.n_ceiling", 0);
 
               }
@@ -216,7 +229,7 @@ script:
                           max = arr[i];
 
                     id(ceilingmax) = max;
-                    id(disp1).set_component_value("b_ceiling", 1);
+                    id(disp1).set_component_value("home.b_ceiling", 1);
                     id(disp1).set_component_value("home.n_ceiling", id(ceilingmax));
               }
               
@@ -251,7 +264,7 @@ script:
                 id(disp1).set_component_value("home.n_bright", id(oh_entryway_speaker_volume).state);
               }
               if (id(oh_entryway_ceiling).state == 0) { 
-                id(disp1).set_component_value("b_ceiling", 0); 
+                id(disp1).set_component_value("home.b_ceiling", 0); 
                 id(disp1).set_component_value("home.n_ceiling", 0);
 
               }
@@ -271,7 +284,7 @@ script:
                           max = arr[i];
 
                     id(ceilingmax) = max;
-                    id(disp1).set_component_value("b_ceiling", 1);
+                    id(disp1).set_component_value("home.b_ceiling", 1);
                     id(disp1).set_component_value("home.n_ceiling", id(ceilingmax));
               }
               //No table lights in this room. Zeroising table symbol
@@ -284,7 +297,7 @@ script:
                 id(disp1).set_component_value("home.n_bright", id(oh_bathroom_speaker_volume).state);
               }
               if (id(oh_bathroom_ceiling).state == 0) { 
-                id(disp1).set_component_value("b_ceiling", 0); 
+                id(disp1).set_component_value("home.b_ceiling", 0); 
                 id(disp1).set_component_value("home.n_ceiling", 0);
 
               }
@@ -304,7 +317,7 @@ script:
                           max = arr[i];
 
                     id(ceilingmax) = max;
-                    id(disp1).set_component_value("b_ceiling", 1);
+                    id(disp1).set_component_value("home.b_ceiling", 1);
                     id(disp1).set_component_value("home.n_ceiling", id(ceilingmax));
               }
               if (id(oh_bathroom_mirror).state == 0) { 
@@ -343,18 +356,26 @@ script:
             }
             
             
-  - id: update_mode
+  - id: update_mode #triggered when switching between All Lights and Sound mode. Update icons and values to current states.
     then:
         - lambda: |-
             if (id(mode) == "All Lights") {
             
-              id(disp1).set_component_picc("home.bright", 1);
+              if (id(oh_all_lights).state == 1) { 
+                id(disp1).set_component_picc("home.bright", 22);
+              }
+              else {
+                id(disp1).set_component_picc("home.bright", 1);
+              }
+
               id(disp1).set_component_picc("home.kelvin", 1);
               id(disp1).set_component_value("home.n_bright", id(oh_all_brightness).state);
               id(disp1).set_component_value("home.n_kelvin", id(oh_all_kelvin).state);
+              
             }
             else if (id(mode) == "Sound") {
               id(disp1).set_component_picc("home.bright", 2);
+              
               id(disp1).set_component_picc("home.kelvin", 2);
               id(disp1).set_component_value("home.n_kelvin", id(soundaverage));
 
@@ -362,15 +383,19 @@ script:
                 id(disp1).set_component_value("home.n_bright", id(oh_kitchen_speaker_volume).state);
               }
               if (id(currentroom) == "Livingroom" ) {
+                id(disp1).set_component_value("home.n_bright", id(oh_livingroom_speaker_volume).state);
               }
               if (id(currentroom) == "Bedroom" ) {
+                id(disp1).set_component_value("home.n_bright", id(oh_bedroom_speaker_volume).state);
               }
               if (id(currentroom) == "Entryway" ) {
+                id(disp1).set_component_value("home.n_bright", id(oh_entryway_speaker_volume).state);
               }
               if (id(currentroom) == "Bathroom" ) {
+                id(disp1).set_component_value("home.n_bright", id(oh_bathroom_speaker_volume).state);
               }
             }
-  - id: speaker_average
+  - id: speaker_average # calculates the average volume on all speakers
     mode: restart
     then:
         - lambda: |-
@@ -380,14 +405,10 @@ script:
             if (id(mode) == "Sound") {
               id(disp1).set_component_value("home.n_kelvin", id(soundaverage));
             }
-# A reboot button is always useful
-#button:
-#  - platform: restart
-#    internal: true
-#    name: Restart $device_name
 
 # Define some inputs
 binary_sensor:
+    #Left physical button
   - platform: gpio
     internal: true
     name: $device_name Left Button
@@ -397,6 +418,7 @@ binary_sensor:
     on_click:
      - switch.toggle: relay_1
 
+    #Right physical button
   - platform: gpio
     internal: true
     name: $device_name Right Button
@@ -406,6 +428,7 @@ binary_sensor:
     on_click:
       - switch.toggle: relay_2
 
+    #Button to start upload of TFT file
   - platform: nextion
     internal: true
     name: $device_name TFT Button
@@ -414,13 +437,14 @@ binary_sensor:
     on_press:
       then:
         - lambda: 'id(disp1)->upload_tft();'
-        
+
+    #"invisible button" used to trigger reset to start page when display enters sleep mode. Button press is triggered in the tft file.
   - platform: nextion
     internal: true
     name: $device_name Click Screensaver
     page_id: 3
     component_id: 7
-    on_press:
+    on_release:
       then:
         - lambda: |-
             id(disp1).set_component_text("home.room", id(device).c_str());
@@ -430,7 +454,8 @@ binary_sensor:
 
         - script.execute: update_room
         - script.execute: update_mode
-        
+
+  # "Invisible" button placed in settings page. When pressing the vacuum icon this button i triggered.   
   - platform: nextion
     internal: true
     name: $device_name Click Vacuum
@@ -454,7 +479,7 @@ binary_sensor:
               else if (id(currentroom) == "Bathroom") {
                 id(mqtt_client).publish("oh/vacuum/bathroom", "ON");
               }
-
+  #Ceiling lights button increase
   - platform: nextion
     internal: true
     name: $device_name Button 1 UP
@@ -509,7 +534,7 @@ binary_sensor:
             else {
               //Light is 100 can't increase.
             }
-            
+  #Ceiling lights button decrease
   - platform: nextion
     internal: true
     name: $device_name Button 1 DOWN
@@ -570,7 +595,7 @@ binary_sensor:
             else {
               //Below 5. Don't decrease more.
             }
-
+  #Table lights button increase
   - platform: nextion
     internal: true
     name: $device_name Button 2 UP
@@ -637,7 +662,7 @@ binary_sensor:
             else {
               //Light is 100 can't increase.
             }
-            
+  #Table lights button decrease
   - platform: nextion
     internal: true
     name: $device_name Button 2 DOWN
@@ -709,7 +734,7 @@ binary_sensor:
             else {
               //Below 5. Don't decrease more.
             }
-
+  #Global brightness or single speaker increase
   - platform: nextion
     internal: true
     name: $device_name Button 3 UP
@@ -798,7 +823,7 @@ binary_sensor:
               }
               
             }
-            
+  #Global brightness or single speaker decrease
   - platform: nextion
     internal: true
     name: $device_name Button 3 DOWN
@@ -890,7 +915,7 @@ binary_sensor:
               }  
             }
 
-            
+  #Global kelvin or speaker group increase
   - platform: nextion
     internal: true
     name: $device_name Button 4 UP
@@ -917,7 +942,7 @@ binary_sensor:
               }
               if (b <= 100) {
               
-                if (id(oh_all_kelvin).state >= 1) { 
+                if (id(oh_all_kelvin).state >= 0) { 
                   id(mqtt_client).publish("oh/all_kelvin", esphome::to_string(b));
                 }
                 
@@ -955,7 +980,7 @@ binary_sensor:
               }
  
             }
-
+  #Global kelvin or speaker group decrease
   - platform: nextion
     internal: true
     name: $device_name Button 4 DOWN
@@ -1022,7 +1047,7 @@ binary_sensor:
                 //Light is 0 can't decrease.
               }
             }
-
+  #Changes room and triggers update_room script
   - platform: nextion
     internal: true
     name: $device_name Next Room
@@ -1063,7 +1088,36 @@ binary_sensor:
   
             }
         - script.execute: update_room
+        
+  #Button toggle all lights ON/OFF (brightness symbol)
+  - platform: nextion
+    internal: true
+    name: $device_name Brightness/Speaker
+    id: nsp_brightness_onoff
+    page_id: 2
+    component_id: 11
+    on_release:
+      then:
+        - lambda: |-
+            if (id(mode) == "All Lights") {
+              if (id(oh_all_lights).state == 1) { 
+                id(mqtt_client).publish("oh/all_lights", "0");
+                id(disp1).set_component_picc("home.bright", 1);
+  
+              }
+              else {
+                id(mqtt_client).publish("oh/all_lights", "1");
+                id(disp1).set_component_picc("home.bright", 22);
+              }
+            }
+            else {
+              //Mode is Sound do nothing
+            }
 
+
+# id(mqtt_client).publish("oh/all_kelvin", esphome::to_string(a));
+        
+  #Button to enter current room
   - platform: nextion
     internal: true
     name: $device_name Current Room
@@ -1073,17 +1127,8 @@ binary_sensor:
     on_release:
       then:
         - lambda: 'id(disp1).goto_page(id(currentroom).c_str());'
-        
-#  - platform: nextion
-#    internal: true
-#    name: $device_name Time
-#    id: nsp_time
-#    page_id: 2
-#    component_id: 9
-#    on_release:
-#      then:
-#        - lambda: 'id(disp1).goto_page("settings");'
 
+  #Dynamic button that is hidden by default. id(event) is used to decide what should happen when button is pressed.
   - platform: nextion
     internal: true
     name: $device_name Event Button
@@ -1097,7 +1142,7 @@ binary_sensor:
               id(mqtt_client).publish("oh/event", "hide");
               id(mqtt_client).publish("oh/entryway/lock", "OFF");
             }
-
+  #Changes between All Lights mode and Sound mode. 
   - platform: nextion
     internal: true
     name: $device_name Mode
@@ -1118,7 +1163,8 @@ binary_sensor:
             }
             
         - script.execute: update_mode        
-#                        id(ceilingmax) = max;            
+#                        id(ceilingmax) = max;     
+  #Turn ON/OFF Ceiling lights in current room.       
   - platform: nextion
     internal: true
     name: $device_name Ceiling Button
@@ -1141,7 +1187,7 @@ binary_sensor:
             }
             else if (id(currentroom) == "Livingroom") {
              // No ceiling lights
-             id(disp1).set_component_value("b_ceiling", 0); 
+             id(disp1).set_component_value("home.b_ceiling", 0); 
 
 
             }
@@ -1172,7 +1218,7 @@ binary_sensor:
               }
 
             }
-            
+  #Turn ON/OFF Table lights in current room     
   - platform: nextion
     internal: true
     name: $device_name Table Button
@@ -1232,7 +1278,8 @@ binary_sensor:
               }
 
             }
-            
+  #This is the "no-power" icon. Only vissble when one of the Physical buttons has been pressed and turned one of the relays OFF.
+  #Pressing the button will turn the two relays ON again and the "no-power" icon will be hidden.
   - platform: nextion
     internal: true
     name: $device_name Ceiling Power
@@ -1243,7 +1290,8 @@ binary_sensor:
       then:
         - switch.turn_on: relay_1
         - switch.turn_on: relay_2
-        
+
+  #Button on coffeepage to trigger coffee brew.    
   - platform: nextion
     internal: true
     name: $device_name Coffee Brew
@@ -1256,7 +1304,7 @@ binary_sensor:
               id(mqtt_client).publish("oh/coffee/brew", "1");
               
 
-
+  #Button to toggle Outlet coffee brewer
   - platform: nextion
     internal: true
     name: $device_name K Coffee
@@ -1272,6 +1320,7 @@ binary_sensor:
             else {
                 id(mqtt_client).publish("oh/kitchen/coffee", "1");
             }
+  #Button to toggle Outlet Egg Boiler
   - platform: nextion
     internal: true
     name: $device_name K Egg Boiler
@@ -1287,7 +1336,7 @@ binary_sensor:
             else {
                 id(mqtt_client).publish("oh/kitchen/eggboiler", "1");
             }
-
+  #Button to toggle Outlet Stereo
   - platform: nextion
     internal: true
     name: $device_name LR Stereo
@@ -1303,6 +1352,7 @@ binary_sensor:
             else {
                 id(mqtt_client).publish("oh/livingroom/stereo", "1");
             }
+  #Button to toggle Outlet TV
   - platform: nextion
     internal: true
     name: $device_name BR Oldtv
@@ -1319,7 +1369,7 @@ binary_sensor:
                 id(mqtt_client).publish("oh/bedroom/oldtv", "1");
             }
                                                             
-            
+#Change this to Click button. Will be 2 buttons less.  
   - platform: nextion
     internal: true
     name: $device_name BR Curtain Open
@@ -1390,7 +1440,7 @@ binary_sensor:
 
     
 sensor:
-
+  #Variable on Nextion Alarm Page. Used to pass the code that has been entered. Variable is sent using code in press_release event in HMI file.
   - platform: nextion
     internal: true
     nextion_id: disp1
@@ -1401,7 +1451,7 @@ sensor:
         - lambda: |-    
             int a = x;
             id(mqtt_client).publish("oh/alarm", esphome::to_string(a));
-            
+  #Variable on Nextion coffee page. Variable is changed every time you push a coffee cup button. Variable is sent using code in press_release event in HMI file.          
   - platform: nextion
     internal: true
     nextion_id: disp1
@@ -1445,6 +1495,11 @@ sensor:
 #    update_interval: 10s
 #    attenuation: 11db
 
+# Below all MQTT subscriptions. Each component represents one Item in Openhab. Most mqtt_subscription components also have 
+# their equivalent Nextion component on the display. Nextion button or variable for example.
+# As soon as an Item changes the state is sent on that Items topic. Esphome subscribs to those topics through the components below.
+# When a topic is updated an event is triggered with the help of esphome on_value parameter to update the sceen accordingly.
+
   - platform: mqtt_subscribe
     internal: true
     name: "Openhab All Brightness"
@@ -1459,6 +1514,26 @@ sensor:
             }
             else if (id(mode) == "Sound") {
             
+            }
+            
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Openhab All Lights OnOff"
+    id: oh_all_lights
+    topic: oh/all_lights
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(mode) == "All Lights") {
+              if (x == 1) { 
+                id(disp1).set_component_picc("home.bright", 22);
+              }
+              else {
+                id(disp1).set_component_picc("home.bright", 1);
+              }
+            }
+            else {
+              //Mode is Sound, do not update icon
             }
 
             
@@ -1597,14 +1672,14 @@ sensor:
         
             else if (id(currentroom) == "Kitchen") {
               if (id(oh_kitchen_ceiling).state >= 1 ) { 
-                id(disp1).set_component_value("b_ceiling", 1); 
+                id(disp1).set_component_value("home.b_ceiling", 1); 
                 id(disp1).set_component_value("home.n_ceiling", x);
                 id(ceilingmax) = x;
 
               }
               else {
                 if (id(oh_kitchen_ceiling).state == 0 and id(oh_kitchen_table).state == 0) { 
-                  id(disp1).set_component_value("b_ceiling", 0); 
+                  id(disp1).set_component_value("home.b_ceiling", 0); 
                   id(disp1).set_component_value("home.n_ceiling", 0);
                 }
               }
@@ -1626,13 +1701,13 @@ sensor:
         
             else if (id(currentroom) == "Kitchen") {
               if (id(oh_kitchen_table).state >= 1 ) { 
-                id(disp1).set_component_value("b_ceiling", 1); 
+                id(disp1).set_component_value("home.b_ceiling", 1); 
                 id(disp1).set_component_value("home.n_ceiling", x);
                 id(ceilingmax) = x;
               }
               else {
                 if (id(oh_kitchen_ceiling).state == 0 and id(oh_kitchen_table).state == 0) { 
-                  id(disp1).set_component_value("b_ceiling", 0); 
+                  id(disp1).set_component_value("home.b_ceiling", 0); 
                   id(disp1).set_component_value("home.n_ceiling", 0);
                 }
               }
@@ -1743,14 +1818,14 @@ sensor:
         
             else if (id(currentroom) == "Bedroom") {
               if (id(oh_bedroom_ceiling).state >= 1 ) { 
-                id(disp1).set_component_value("b_ceiling", 1); 
+                id(disp1).set_component_value("home.b_ceiling", 1); 
                 id(disp1).set_component_value("home.n_ceiling", x);
                 id(ceilingmax) = x;
 
               }
               else {
                 if (id(oh_bedroom_ceiling).state == 0) { 
-                  id(disp1).set_component_value("b_ceiling", 0); 
+                  id(disp1).set_component_value("home.b_ceiling", 0); 
                   id(disp1).set_component_value("home.n_ceiling", 0);
                 }
               }
@@ -1862,14 +1937,14 @@ sensor:
         
             else if (id(currentroom) == "Entryway") {
               if (id(oh_entryway_ceiling).state >= 1 ) { 
-                id(disp1).set_component_value("b_ceiling", 1); 
+                id(disp1).set_component_value("home.b_ceiling", 1); 
                 id(disp1).set_component_value("home.n_ceiling", x);
                 id(ceilingmax) = x;
 
               }
               else {
                 if (id(oh_entryway_ceiling).state == 0) { 
-                  id(disp1).set_component_value("b_ceiling", 0); 
+                  id(disp1).set_component_value("home.b_ceiling", 0); 
                   id(disp1).set_component_value("home.n_ceiling", 0);
                 }
               }
@@ -1892,14 +1967,14 @@ sensor:
         
             else if (id(currentroom) == "Bathroom") {
               if (id(oh_bathroom_ceiling).state >= 1 ) { 
-                id(disp1).set_component_value("b_ceiling", 1); 
+                id(disp1).set_component_value("home.b_ceiling", 1); 
                 id(disp1).set_component_value("home.n_ceiling", x);
                 id(ceilingmax) = x;
 
               }
               else {
                 if (id(oh_bathroom_ceiling).state == 0) { 
-                  id(disp1).set_component_value("b_ceiling", 0); 
+                  id(disp1).set_component_value("home.b_ceiling", 0); 
                   id(disp1).set_component_value("home.n_ceiling", 0);
                 }
               }
@@ -1985,10 +2060,6 @@ sensor:
       then: 
         - lambda: |-
             id(disp1).set_component_value("Livingroom.b_oldtv", x);
-
-            
-#Switches Bedroom
-
         
 #Speakers
 
@@ -2085,7 +2156,7 @@ sensor:
         lambda: |-
           id(disp1).set_component_text_printf("t_temp", "%.1f ""\xb0""C", id(oh_temp).state);
 
-
+#String Item in Openhab publishes to this topic. Used for dynamic events or just to control the nspanel from outside.
 text_sensor:
   - platform: mqtt_subscribe
     internal: true
@@ -2094,26 +2165,65 @@ text_sensor:
     topic: oh/event
     on_value:
       then:
-        lambda: |-
-          if (x == "hide") {
-            id(disp1).hide_component("p_event");
-
-          }
-          else if (x == "startpage") {
-            id(disp1).goto_page("home");
-            id(event) = x;
-          }
-          else if (x == "unlock") {
-            id(disp1).goto_page("home");
-            id(disp1).show_component("p_event");
-            id(event) = x;
-          }
-          else if (x == "alarm") {
-            id(disp1).set_backlight_brightness(1);
-            id(disp1).goto_page("alarm");
-            id(event) = x;
-          }
-          
+       - delay: 16ms
+       - lambda: |-
+            if (x == "hide") {
+              id(disp1).hide_component("p_event");
+  
+            }
+            else if (x == "startpage") {
+              id(disp1).goto_page("home");
+              id(event) = x;
+            }
+            else if (x == "unlock") {
+              id(disp1).goto_page("home");
+              id(disp1).show_component("p_event");
+              id(event) = x;
+            }
+            else if (x == "alarm") {
+              id(disp1).set_backlight_brightness(1);
+              id(disp1).goto_page("alarm");
+              id(event) = x;
+            }
+            else if (x == "uploadtft") {
+              id(disp1)->upload_tft();
+            }
+            
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Dropdown"
+    id: oh_dropdown
+    topic: oh/dropdown
+    on_value:
+      then:
+       - lambda: |-
+            if (x == "home") {
+            id(disp1).set_component_value("dropdown.bt_home", 1);
+            }
+            else if (x == "away") {
+            id(disp1).set_component_value("dropdown.bt_home", 0);
+            }
+            else if (x == "wake") {
+            id(disp1).set_component_value("dropdown.bt_wake", 1);
+            }
+            else if (x == "sleep") {
+            id(disp1).set_component_value("dropdown.bt_wake", 0);
+            }
+            else if (x == "armed") {
+            id(disp1).set_component_value("dropdown.bt_armed", 1);
+            }
+            else if (x == "disarmed") {
+            id(disp1).set_component_value("dropdown.bt_armed", 0);
+            }
+            else if (x == "ICON ON") {
+            id(oh_all_lights).state = 1;
+            id(disp1).set_component_picc("home.bright", 22);
+            }
+            else if (x == "ICON OFF") {
+            id(oh_all_lights).state = 0;
+            id(disp1).set_component_picc("home.bright", 1);
+            } 
+            
   - platform: nextion
     internal: true
     nextion_id: disp1
@@ -2124,6 +2234,17 @@ text_sensor:
       then:
         - lambda: |-    
               id(mqtt_client).publish("oh/livingroom/tvremote", x.c_str());
+              
+  - platform: nextion
+    internal: true
+    nextion_id: disp1
+    name: "Variable Dropdown"
+    id: nsp_dropdown
+    component_name: vaDropdown
+    on_value:
+      then:
+        - lambda: |-    
+              id(mqtt_client).publish("oh/dropdown", x.c_str());
 
 # Define some outputs
 switch:
@@ -2176,6 +2297,32 @@ switch:
       inverted: true
     restore_mode: ALWAYS_ON
 
+# Configure UART for communicating with the screen
+uart:
+  id: tf_uart
+  tx_pin: 16
+  rx_pin: 17
+  baud_rate: 115200
+
+# Configure the screen itself
+display:
+  - platform: nextion
+    id: disp1
+    uart_id: tf_uart
+    tft_url: http://192.168.xx.xx:8080/hmi.tft
+    # A little fun...
+    on_setup:
+      then:
+         - lambda: 'id(disp1).goto_page("bootscreen");'
+         - lambda: 'id(disp1).set_component_text("home.room", id(currentroom).c_str());'
+         - lambda: 'id(disp1).set_component_text("home.mode", id(mode).c_str());'
+
+# A reboot button is always useful
+#button:
+#  - platform: restart
+#    internal: true
+#    name: Restart $device_name
+
 #number:
 #  platform: template
 #  internal: true
@@ -2202,23 +2349,3 @@ switch:
 #rtttl:
 #  id: buzzer
 #  output: buzzer_out
-
-# Configure UART for communicating with the screen
-uart:
-  id: tf_uart
-  tx_pin: 16
-  rx_pin: 17
-  baud_rate: 115200
-
-# Configure the screen itself
-display:
-  - platform: nextion
-    id: disp1
-    uart_id: tf_uart
-    tft_url: http://192.xxx.xx.xx:8080/hmi.tft
-    # A little fun...
-    on_setup:
-      then:
-         - lambda: 'id(disp1).goto_page("bootscreen");'
-         - lambda: 'id(disp1).set_component_text("home.room", id(currentroom).c_str());'
-         - lambda: 'id(disp1).set_component_text("home.mode", id(mode).c_str());'
