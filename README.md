@@ -8,6 +8,7 @@ There are comments above almost every component trying to explain their purpose
 Here are some simple instructions to setup your own lights so that is coresponds to your setup:
 
 Add new light
+
 1 add mqtt component
 
 2 add light to either table button or ceiling button component
@@ -17,6 +18,7 @@ Add new light
 4 add light to both up and down button for either ceiling or table up/downs
 
 Add new switch for room
+
 1 add binary sensor (button on the display) triggers mqtt command
 
 2 add mqtt component (updates button value when receiving a command)
