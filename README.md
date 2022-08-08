@@ -9,10 +9,14 @@ Here are some simple instructions to setup your own lights so that is coresponds
 
 Add new light
 1 add mqtt component
+
 2 add light to either table button or ceiling button component
+
 3 update script update_room or update_mode remember to change array number to the same as the number of lights
+
 4 add light to both up and down button for either ceiling or table up/downs
 
 Add new switch for room
 1 add binary sensor (button on the display) triggers mqtt command
+
 2 add mqtt component (updates button value when receiving a command)
