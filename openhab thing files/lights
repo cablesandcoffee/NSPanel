@@ -1,0 +1,218 @@
+UID: mqtt:topic:myMQTTBroker:nspanel_lights
+label: NSPanel Lights
+thingTypeUID: mqtt:topic
+configuration: {}
+bridgeUID: mqtt:broker:myMQTTBroker
+channels:
+  - id: all_brightness
+    channelTypeUID: mqtt:dimmer
+    label: All Brightness
+    description: ""
+    configuration:
+      commandTopic: oh/all_brightness
+      postCommand: true
+      step: 1
+      min: 0
+      stateTopic: oh/all_brightness
+      max: 100
+  - id: all_kelvin
+    channelTypeUID: mqtt:dimmer
+    label: All Kelvin
+    description: null
+    configuration:
+      commandTopic: oh/all_kelvin
+      postCommand: true
+      min: 0
+      stateTopic: oh/all_kelvin
+      max: 100
+  - id: all_lights
+    channelTypeUID: mqtt:switch
+    label: All Lights On OFF
+    description: ""
+    configuration:
+      commandTopic: oh/all_lights
+      postCommand: true
+      stateTopic: oh/all_lights
+      off: "0"
+      on: "1"
+  - id: kitchen_c1
+    channelTypeUID: mqtt:dimmer
+    label: Kitchen C1
+    description: null
+    configuration:
+      commandTopic: oh/kitchen/c1
+      postCommand: true
+      min: 0
+      stateTopic: oh/kitchen/c1
+      max: 100
+  - id: kitchen_t1
+    channelTypeUID: mqtt:dimmer
+    label: Kitchen T1
+    description: null
+    configuration:
+      commandTopic: oh/kitchen/t1
+      postCommand: true
+      min: 0
+      stateTopic: oh/kitchen/t1
+      max: 100
+  - id: kitchen_t2
+    channelTypeUID: mqtt:dimmer
+    label: Kitchen T2
+    description: null
+    configuration:
+      commandTopic: oh/kitchen/t2
+      postCommand: true
+      min: 0
+      stateTopic: oh/kitchen/t2
+      max: 100
+  - id: livingroom_c1
+    channelTypeUID: mqtt:dimmer
+    label: Livingroom C1
+    description: null
+    configuration:
+      commandTopic: oh/livingroom/c1
+      postCommand: true
+      min: 0
+      stateTopic: oh/livingroom/c1
+      max: 100
+  - id: livingroom_t1
+    channelTypeUID: mqtt:dimmer
+    label: Livingroom T1
+    description: null
+    configuration:
+      commandTopic: oh/livingroom/t1
+      postCommand: true
+      min: 0
+      stateTopic: oh/livingroom/t1
+      max: 100
+  - id: livingroom_t2
+    channelTypeUID: mqtt:dimmer
+    label: Livingroom T2
+    description: null
+    configuration:
+      commandTopic: oh/livingroom/t2
+      postCommand: true
+      min: 0
+      stateTopic: oh/livingroom/t2
+      max: 100
+  - id: entryway_c1
+    channelTypeUID: mqtt:dimmer
+    label: Entryway C1
+    description: null
+    configuration:
+      commandTopic: oh/entryway/c1
+      postCommand: true
+      min: 0
+      stateTopic: oh/entryway/c1
+      max: 100
+  - id: bathroom_t1
+    channelTypeUID: mqtt:dimmer
+    label: Bathroom T1
+    description: null
+    configuration:
+      commandTopic: oh/bathroom/t1
+      postCommand: true
+      min: 0
+      stateTopic: oh/bathroom/t1
+      max: 100
+  - id: bedroomE_c1
+    channelTypeUID: mqtt:dimmer
+    label: BedroomE C1
+    description: null
+    configuration:
+      commandTopic: oh/bedroomE/c1
+      postCommand: true
+      min: 0
+      stateTopic: oh/bedroomE/c1
+      max: 100
+  - id: bedroomE_t1
+    channelTypeUID: mqtt:dimmer
+    label: BedroomE T1
+    description: null
+    configuration:
+      commandTopic: oh/bedroomE/t1
+      postCommand: true
+      min: 0
+      stateTopic: oh/bedroomE/t1
+      max: 100
+  - id: bedroomE_t2
+    channelTypeUID: mqtt:dimmer
+    label: BedroomE T2
+    description: null
+    configuration:
+      commandTopic: oh/bedroomE/t2
+      postCommand: true
+      min: 0
+      stateTopic: oh/bedroomE/t2
+      max: 100
+  - id: bedroomE_t3
+    channelTypeUID: mqtt:dimmer
+    label: BedroomE T3
+    description: null
+    configuration:
+      commandTopic: oh/bedroomE/t3
+      postCommand: true
+      min: 0
+      stateTopic: oh/bedroomE/t3
+      max: 100
+  - id: bedroomE_t4
+    channelTypeUID: mqtt:dimmer
+    label: BedroomE T4
+    description: null
+    configuration:
+      commandTopic: oh/bedroomE/t4
+      postCommand: true
+      min: 0
+      stateTopic: oh/bedroomE/t4
+      max: 100
+  - id: bedroomE_t5
+    channelTypeUID: mqtt:switch
+    label: BedroomE T5
+    description: null
+    configuration:
+      commandTopic: oh/bedroomE/t5
+      postCommand: true
+      stateTopic: oh/bedroomE/t5
+      off: "0"
+      on: "1"
+  - id: bedroomT_t1
+    channelTypeUID: mqtt:dimmer
+    label: BedroomT T1
+    description: null
+    configuration:
+      commandTopic: oh/bedroomT/t1
+      postCommand: true
+      min: 0
+      stateTopic: oh/bedroomT/t1
+      max: 100
+  - id: bedroomT_t2
+    channelTypeUID: mqtt:dimmer
+    label: BedroomT T2
+    description: null
+    configuration:
+      commandTopic: oh/bedroomT/t2
+      postCommand: true
+      min: 0
+      stateTopic: oh/bedroomT/t2
+      max: 100
+  - id: bathroom_relay1
+    channelTypeUID: mqtt:switch
+    label: Bathroom Relay1
+    description: null
+    configuration:
+      commandTopic: oh/Bathroom/relay1
+      postCommand: false
+      stateTopic: oh/Bathroom/relay1
+      off: "0"
+      on: "100"
+  - id: bathroom_relay2
+    channelTypeUID: mqtt:switch
+    label: Bathroom Relay2
+    description: null
+    configuration:
+      commandTopic: oh/Bathroom/relay2
+      postCommand: false
+      stateTopic: oh/Bathroom/relay2
+      off: "0"
+      on: "100"
+

@@ -1,0 +1,77 @@
+UID: mqtt:topic:myMQTTBroker:nspanel_speakers
+label: NSPanel Speakers
+thingTypeUID: mqtt:topic
+configuration: {}
+bridgeUID: mqtt:broker:myMQTTBroker
+channels:
+  - id: kitchen_speaker_vol
+    channelTypeUID: mqtt:dimmer
+    label: Kök Volym
+    description: ""
+    configuration:
+      commandTopic: oh/kitchen/speaker/volume
+      postCommand: true
+      min: 0
+      stateTopic: oh/kitchen/speaker/volume
+      max: 100
+  - id: livingroom_speaker_vol
+    channelTypeUID: mqtt:dimmer
+    label: Vardagsrum Volym
+    description: null
+    configuration:
+      commandTopic: oh/livingroom/speaker/volume
+      postCommand: true
+      min: 0
+      stateTopic: oh/livingroom/speaker/volume
+      max: 100
+  - id: bathroom_speaker_vol
+    channelTypeUID: mqtt:dimmer
+    label: Badrum Volym
+    description: null
+    configuration:
+      commandTopic: oh/bathroom/speaker/volume
+      postCommand: true
+      min: 0
+      stateTopic: oh/bathroom/speaker/volume
+      max: 100
+  - id: stereo_speaker_vol
+    channelTypeUID: mqtt:dimmer
+    label: Stereo Volym
+    description: null
+    configuration:
+      commandTopic: oh/entryway/speaker/volume
+      postCommand: true
+      min: 0
+      stateTopic: oh/entryway/speaker/volume
+      max: 100
+  - id: nsp_speaker_group
+    channelTypeUID: mqtt:dimmer
+    label: NSP Speaker Group
+    description: ""
+    configuration:
+      commandTopic: oh/all_speakers
+      postCommand: true
+      min: 0
+      stateTopic: oh/all_speakers
+      max: 100
+  - id: bedroomE_speaker_vol
+    channelTypeUID: mqtt:dimmer
+    label: Sovrum E Volym
+    description: null
+    configuration:
+      commandTopic: oh/bedroomE/speaker/volume
+      postCommand: true
+      min: 0
+      stateTopic: oh/bedroomE/speaker/volume
+      max: 100
+  - id: bedroomT_speaker_vol
+    channelTypeUID: mqtt:dimmer
+    label: Sovrum T Volym
+    description: null
+    configuration:
+      commandTopic: oh/bedroomT/speaker/volume
+      postCommand: true
+      min: 0
+      stateTopic: oh/bedroomT/speaker/volume
+      max: 100
+

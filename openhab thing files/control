@@ -1,0 +1,109 @@
+UID: mqtt:topic:myMQTTBroker:nspanel_control
+label: NSPanel Control
+thingTypeUID: mqtt:topic
+configuration: {}
+bridgeUID: mqtt:broker:myMQTTBroker
+channels:
+  - id: nsp_kitchen_croom
+    channelTypeUID: mqtt:string
+    label: NSP Kitchen Current Room
+    description: ""
+    configuration:
+      commandTopic: nsp/kitchen/currentroom
+      stateTopic: nsp/kitchen/currentroom
+      postCommand: true
+  - id: nsp_temp
+    channelTypeUID: mqtt:number
+    label: NSP Outside Temperature
+    description: ""
+    configuration:
+      commandTopic: oh/temp
+      stateTopic: oh/temp
+      postCommand: true
+  - id: nsp_event
+    channelTypeUID: mqtt:string
+    label: NSP Event
+    description: ""
+    configuration:
+      commandTopic: oh/event
+      stateTopic: oh/event
+      postCommand: true
+  - id: nsp_standardcups
+    channelTypeUID: mqtt:dimmer
+    label: NSP Standard Cups
+    description: ""
+    configuration:
+      commandTopic: oh/coffee/standardcups
+      postCommand: true
+      min: 0
+      stateTopic: oh/coffee/standardcups
+      max: 100
+  - id: nsp_readyforcoffee
+    channelTypeUID: mqtt:switch
+    label: NSP Ready for Coffee
+    description: ""
+    configuration:
+      commandTopic: oh/coffee/readyforcoffee
+      off: "0"
+      on: "1"
+  - id: nsp_alarm
+    channelTypeUID: mqtt:string
+    label: NSP Alarm
+    description: ""
+    configuration:
+      stateTopic: oh/alarm
+      postCommand: true
+  - id: nsp_tv_remote
+    channelTypeUID: mqtt:string
+    label: NSP TV Remote
+    description: ""
+    configuration:
+      stateTopic: oh/livingroom/tvsamsung
+      postCommand: true
+  - id: NSP_TV_LG_POWER
+    channelTypeUID: mqtt:switch
+    label: NSP TV LG Power
+    description: ""
+    configuration:
+      commandTopic: oh/tvlg
+      postCommand: true
+      stateTopic: oh/tvlg
+      off: OFF
+      on: ON
+  - id: NSP_TV_LG_STRING
+    channelTypeUID: mqtt:string
+    label: NSP TV LG STRING
+    description: null
+    configuration:
+      commandTopic: oh/tvlg
+      stateTopic: oh/tvlg
+      postCommand: true
+  - id: NSP_TV_LG_MUTE
+    channelTypeUID: mqtt:switch
+    label: NSP TV LG MUTE
+    description: ""
+    configuration:
+      commandTopic: oh/tvlg
+      postCommand: true
+      stateTopic: oh/tvlg
+      off: MUTEOFF
+      on: MUTEON
+  - id: NSP_TV_LG_SOURCE
+    channelTypeUID: mqtt:string
+    label: NSP TV LG SOURCE
+    description: null
+    configuration:
+      commandTopic: oh/tvlg
+      stateTopic: oh/tvlg
+      postCommand: true
+  - id: NSP_PARTYTIME
+    channelTypeUID: mqtt:switch
+    label: NSP PARTYTIME
+    description: null
+    configuration:
+      commandTopic: oh/tvlg
+      postCommand: true
+      stateTopic: oh/tvlg
+      off: PARTYOFF
+      on: PARTYON
+

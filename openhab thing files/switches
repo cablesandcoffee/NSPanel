@@ -1,0 +1,173 @@
+UID: mqtt:topic:myMQTTBroker:nspanel_switches
+label: NSPanel Switches
+thingTypeUID: mqtt:topic
+configuration: {}
+bridgeUID: mqtt:broker:myMQTTBroker
+channels:
+  - id: kitchen_coffee
+    channelTypeUID: mqtt:switch
+    label: Kitchen Coffee
+    description: ""
+    configuration:
+      commandTopic: oh/kitchen/coffee
+      postCommand: true
+      stateTopic: oh/kitchen/coffee
+      off: "0"
+      on: "1"
+  - id: kitchen_egg_boiler
+    channelTypeUID: mqtt:switch
+    label: Kitchen Egg Boiler
+    description: null
+    configuration:
+      commandTopic: oh/kitchen/eggboiler
+      postCommand: true
+      stateTopic: oh/kitchen/eggboiler
+      off: "0"
+      on: "1"
+  - id: kitchen_grinder
+    channelTypeUID: mqtt:switch
+    label: Kitchen Grinder
+    description: null
+    configuration:
+      commandTopic: oh/kitchen/grinder
+      postCommand: true
+      stateTopic: oh/kitchen/grinder
+      off: "0"
+      on: "1"
+  - id: entryway_lock
+    channelTypeUID: mqtt:switch
+    label: Entryway Lock
+    description: ""
+    configuration:
+      commandTopic: oh/entryway/lock
+      stateTopic: oh/entryway/lock
+      postCommand: true
+  - id: coffee_brew
+    channelTypeUID: mqtt:switch
+    label: Coffee Brew
+    description: null
+    configuration:
+      commandTopic: oh/coffee/brew
+      postCommand: true
+      stateTopic: oh/coffee/brew
+      off: "0"
+      on: "1"
+  - id: livingroom_stereo
+    channelTypeUID: mqtt:switch
+    label: Livingroom Stereo
+    description: null
+    configuration:
+      commandTopic: oh/livingroom/stereo
+      postCommand: true
+      stateTopic: oh/livingroom/stereo
+      off: "0"
+      on: "1"
+  - id: livingroom_tv
+    channelTypeUID: mqtt:switch
+    label: Livingroom TV
+    description: null
+    configuration:
+      commandTopic: oh/livingroom/tv
+      postCommand: true
+      stateTopic: oh/livingroom/tv
+      off: "0"
+      on: "1"
+  - id: livingroom_tv_mute
+    channelTypeUID: mqtt:switch
+    label: Livingroom TV Mute
+    description: null
+    configuration:
+      commandTopic: oh/livingroom/tv/mute
+      postCommand: true
+      stateTopic: oh/livingroom/tv/mute
+      off: "0"
+      on: "1"
+  - id: bedroom_oldtv
+    channelTypeUID: mqtt:switch
+    label: Bedroom Old TV
+    description: null
+    configuration:
+      commandTopic: oh/bedroom/oldtv
+      postCommand: true
+      stateTopic: oh/bedroom/oldtv
+      off: "0"
+      on: "1"
+  - id: vacuum_kitchen
+    channelTypeUID: mqtt:switch
+    label: Vacuum Kitchen
+    description: null
+    configuration:
+      commandTopic: oh/vacuum/kitchen
+      stateTopic: oh/vacuum/kitchen
+      postCommand: true
+  - id: vacuum_livingroom
+    channelTypeUID: mqtt:switch
+    label: Vacuum Livingroom
+    description: null
+    configuration:
+      commandTopic: oh/vacuum/livingroom
+      stateTopic: oh/vacuum/livingroom
+      postCommand: true
+  - id: vacuum_entryway
+    channelTypeUID: mqtt:switch
+    label: Vacuum Entryway
+    description: null
+    configuration:
+      commandTopic: oh/vacuum/entryway
+      stateTopic: oh/vacuum/entryway
+      postCommand: true
+  - id: vacuum_bathroom
+    channelTypeUID: mqtt:switch
+    label: Vacuum Bathroom
+    description: null
+    configuration:
+      commandTopic: oh/vacuum/bathroom
+      stateTopic: oh/vacuum/bathroom
+      postCommand: true
+  - id: dropdown_home_away
+    channelTypeUID: mqtt:switch
+    label: Dropdown Home/Away
+    description: ""
+    configuration:
+      commandTopic: oh/dropdown
+      postCommand: true
+      stateTopic: oh/dropdown
+      off: away
+      on: home
+  - id: dropdown_wake_sleep
+    channelTypeUID: mqtt:switch
+    label: Dropdown Wake Sleep
+    description: ""
+    configuration:
+      commandTopic: oh/dropdown
+      postCommand: true
+      stateTopic: oh/dropdown
+      off: sleep
+      on: wake
+  - id: dropdown_armed_disarmed
+    channelTypeUID: mqtt:switch
+    label: Dropdown Armed Disarmed
+    description: ""
+    configuration:
+      commandTopic: oh/dropdown
+      postCommand: true
+      stateTopic: oh/dropdown
+      off: disarmed
+      on: armed
+  - id: vacuum_bedroomE
+    channelTypeUID: mqtt:switch
+    label: Vacuum Bedroom Erik
+    description: null
+    configuration:
+      commandTopic: oh/vacuum/bedroomE
+      stateTopic: oh/vacuum/bedroomE
+      postCommand: true
+  - id: vacuum_bedroomT
+    channelTypeUID: mqtt:switch
+    label: Vacuum Bedroom Tobias
+    description: null
+    configuration:
+      commandTopic: oh/vacuum/bedroomT
+      stateTopic: oh/vacuum/bedroomT
+      postCommand: true
+
