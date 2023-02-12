@@ -1,0 +1,467 @@
+UID: mqtt:topic:myMQTTBroker:nspanel_devices
+label: NSPanel Devices
+thingTypeUID: mqtt:topic
+configuration: {}
+bridgeUID: mqtt:broker:myMQTTBroker
+channels:
+  - id: tv1_power
+    channelTypeUID: mqtt:switch
+    label: TV1 Power
+    description: ""
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Livingroom.tvPower,%s
+      stateTopic: Livingroom.tvPower
+      off: "0"
+      on: "1"
+  - id: tv1_mute
+    channelTypeUID: mqtt:switch
+    label: TV Mute
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Livingroom.tvMute,%s
+      stateTopic: Livingroom.tvMute
+      off: "0"
+      on: "1"
+  - id: tv1_mirror
+    channelTypeUID: mqtt:switch
+    label: MagicMirror
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Entryway.mirror,%s
+      stateTopic: Entryway.mirror
+      off: "0"
+      on: "1"
+  - id: nspkitchenzinkleft
+    channelTypeUID: mqtt:switch
+    label: NSP Kök Vänster
+    description: null
+    configuration:
+      postCommand: true
+      stateTopic: oh/kitchen/autocoffee
+      off: "0"
+      on: "1"
+  - id: nspkitchenzinkright
+    channelTypeUID: mqtt:switch
+    label: NSP Kök Höger
+    description: null
+    configuration:
+      postCommand: true
+      stateTopic: oh/kitchen/autodishwasher
+      off: "0"
+      on: "1"
+  - id: tv1_source
+    channelTypeUID: mqtt:string
+    label: TV1 Source
+    description: ""
+    configuration:
+      stateTopic: oh/tv1/source
+      postCommand: true
+  - id: tv1_volume
+    channelTypeUID: mqtt:string
+    label: TV1 Volume
+    description: null
+    configuration:
+      stateTopic: oh/tv1/volume
+      postCommand: true
+  - id: tv1_channel
+    channelTypeUID: mqtt:string
+    label: TV1 Channel
+    description: null
+    configuration:
+      stateTopic: oh/tv1/channel
+      postCommand: true
+  - id: tv1_player
+    channelTypeUID: mqtt:string
+    label: TV1 Player
+    description: null
+    configuration:
+      stateTopic: oh/tv1/player
+      postCommand: true
+  - id: dropdown_homeaway
+    channelTypeUID: mqtt:switch
+    label: Dropdown Home Away
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: dropdown.homeaway,%s
+      stateTopic: dropdown.homeaway
+      off: "0"
+      on: "1"
+  - id: dropdown_sleepwake
+    channelTypeUID: mqtt:switch
+    label: Dropdown Sleep Wake
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: dropdown.sleepwake,%s
+      stateTopic: dropdown.sleepwake
+      off: "0"
+      on: "1"
+  - id: dropdown_alarm
+    channelTypeUID: mqtt:switch
+    label: Dropdown Alarm
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: dropdown.alarm,%s
+      stateTopic: dropdown.alarm
+      off: "0"
+      on: "1"
+  - id: coffee
+    channelTypeUID: mqtt:switch
+    label: Coffee
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Kitchen.coffee,%s
+      stateTopic: Kitchen.coffee
+      off: "0"
+      on: "1"
+  - id: Eggboiler
+    channelTypeUID: mqtt:switch
+    label: Eggboiler
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Kitchen.eggboiler,%s
+      stateTopic: Kitchen.eggboiler
+      off: "0"
+      on: "1"
+  - id: brE_c1_B
+    channelTypeUID: mqtt:dimmer
+    label: brE_c1_B
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.brE_c1_B,%s
+      stateTopic: Lights.brE_c1_B
+  - id: brE_c1_CT
+    channelTypeUID: mqtt:number
+    label: brE_c1_CT
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.brE_c1_CT,%s
+      stateTopic: Lights.brE_c1_CT
+  - id: brE_t1_B
+    channelTypeUID: mqtt:dimmer
+    label: brE_t1_B
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.brE_t1_B,%s
+      stateTopic: Lights.brE_t1_B
+  - id: brE_t1_CT
+    channelTypeUID: mqtt:number
+    label: brE_t1_CT
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.brE_t1_CT,%s
+      stateTopic: Lights.brE_t1_CT
+  - id: brE_t2_B
+    channelTypeUID: mqtt:dimmer
+    label: brE_t2_B
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.brE_t2_B,%s
+      stateTopic: Lights.brE_t2_B
+  - id: brE_t2_CT
+    channelTypeUID: mqtt:number
+    label: brE_t2_CT
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.brE_t2_CT,%s
+      stateTopic: Lights.brE_t2_CT
+  - id: brE_t3_B
+    channelTypeUID: mqtt:dimmer
+    label: brE_t3_B
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.brE_t3_B,%s
+      stateTopic: Lights.brE_t3_B
+  - id: brE_t3_CT
+    channelTypeUID: mqtt:number
+    label: brE_t3_CT
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.brE_t3_CT,%s
+      stateTopic: Lights.brE_t3_CT
+  - id: brE_t4_B
+    channelTypeUID: mqtt:dimmer
+    label: brE_t4_B
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.brE_t4_B,%s
+      stateTopic: Lights.brE_t4_B
+  - id: brE_t4_CT
+    channelTypeUID: mqtt:number
+    label: brE_t4_CT
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.brE_t4_CT,%s
+      stateTopic: Lights.brE_t4_CT
+  - id: ew_c1_B
+    channelTypeUID: mqtt:dimmer
+    label: ew_c1_B
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.ew_c1_B,%s
+      stateTopic: Lights.ew_c1_B
+  - id: ew_c1_CT
+    channelTypeUID: mqtt:number
+    label: ew_c1_CT
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.ew_c1_CT,%s
+      stateTopic: Lights.ew_c1_CT
+  - id: k_c1_B
+    channelTypeUID: mqtt:dimmer
+    label: k_c1_B
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.k_c1_B,%s
+      stateTopic: Lights.k_c1_B
+  - id: k_c1_CT
+    channelTypeUID: mqtt:number
+    label: k_c1_CT
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.k_c1_CT,%s
+      stateTopic: Lights.k_c1_CT
+  - id: k_t1_B
+    channelTypeUID: mqtt:dimmer
+    label: k_t1_B
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.k_t1_B,%s
+      stateTopic: Lights.k_t1_B
+  - id: k_t1_CT
+    channelTypeUID: mqtt:number
+    label: k_t1_CT
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.k_t1_CT,%s
+      stateTopic: Lights.k_t1_CT
+  - id: k_t2_B
+    channelTypeUID: mqtt:dimmer
+    label: k_t2_B
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.k_t2_B,%s
+      stateTopic: Lights.k_t2_B
+  - id: k_t2_CT
+    channelTypeUID: mqtt:number
+    label: k_t2_CT
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.k_t2_CT,%s
+      stateTopic: Lights.k_t2_CT
+  - id: lr_c1_B
+    channelTypeUID: mqtt:dimmer
+    label: lr_c1_B
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.lr_c1_B,%s
+      stateTopic: Lights.lr_c1_B
+  - id: lr_c1_CT
+    channelTypeUID: mqtt:number
+    label: lr_c1_CT
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.lr_c1_CT,%s
+      stateTopic: Lights.lr_c1_CT
+  - id: lr_t1_B
+    channelTypeUID: mqtt:dimmer
+    label: lr_t1_B
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.lr_t1_B,%s
+      stateTopic: Lights.lr_t1_B
+  - id: lr_t1_CT
+    channelTypeUID: mqtt:number
+    label: lr_t1_CT
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.lr_t1_CT,%s
+      stateTopic: Lights.lr_t1_CT
+  - id: brT_t1_B
+    channelTypeUID: mqtt:dimmer
+    label: brT_t1_B
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.brT_t1_B,%s
+      stateTopic: Lights.brT_t1_B
+  - id: brT_t1_CT
+    channelTypeUID: mqtt:number
+    label: brT_t1_CT
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.brT_t1_CT,%s
+      stateTopic: Lights.brT_t1_CT
+  - id: brT_t2_B
+    channelTypeUID: mqtt:dimmer
+    label: brT_t2_B
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.brT_t2_B,%s
+      stateTopic: Lights.brT_t2_B
+  - id: brT_t2_CT
+    channelTypeUID: mqtt:number
+    label: brT_t2_CT
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.brT_t2_CT,%s
+      stateTopic: Lights.brT_t2_CT
+  - id: br_t1_B
+    channelTypeUID: mqtt:dimmer
+    label: br_t1_B
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.br_t1_B,%s
+      stateTopic: Lights.br_t1_B
+  - id: br_t1_CT
+    channelTypeUID: mqtt:number
+    label: br_t1_CT
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.br_t1_CT,%s
+      stateTopic: Lights.br_t1_CT
+  - id: lr_t2_B
+    channelTypeUID: mqtt:dimmer
+    label: lr_t2_B
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.lr_t2_B,%s
+      stateTopic: Lights.lr_t2_B
+  - id: lr_t2_CT
+    channelTypeUID: mqtt:number
+    label: lr_t2_CT
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.lr_t2_CT,%s
+      stateTopic: Lights.lr_t2_CT
+  - id: k_t1_C
+    channelTypeUID: mqtt:colorHSB
+    label: k_t1_C
+    description: ""
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.k_t1_C,%s,%s,%s
+      stateTopic: Lights.k_t1_C
+  - id: brE_t2_C
+    channelTypeUID: mqtt:colorHSB
+    label: brE_t2_C
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.brE_t2_C,%s,%s,%s
+      stateTopic: Lights.brE_t2_C
+  - id: brE_t4_C
+    channelTypeUID: mqtt:colorHSB
+    label: brE_t4_C
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.brE_t4_C,%s,%s,%s
+      stateTopic: Lights.brE_t4_C
+  - id: brT_t1_C
+    channelTypeUID: mqtt:colorHSB
+    label: brT_t1_C
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.brT_t1_C,%s,%s,%s
+      stateTopic: Lights.brT_t1_C
+  - id: br_t1_C
+    channelTypeUID: mqtt:colorHSB
+    label: br_t1_C
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: Lights.br_t1_C,%s,%s,%s
+      stateTopic: Lights.br_t1_C
+  - id: tv2_power
+    channelTypeUID: mqtt:switch
+    label: TV2 Power
+    description: null
+    configuration:
+      commandTopic: oh/devices
+      postCommand: true
+      formatBeforePublish: BedroomE.tvPower,%s
+      stateTopic: BedroomE.tvPower
+      off: "0"
+      on: "1"
+
