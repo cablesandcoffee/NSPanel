@@ -10,8 +10,8 @@
 
 # Set some variables for convenience
 substitutions:
-  node_name: nsp-kitchen-zink
-  device_name: NSP Kitchen Zink
+  node_name: nsp-kitchen-island
+  device_name: NSP Kitchen Island
   deviceroom: Kitchen
 
 external_components:
