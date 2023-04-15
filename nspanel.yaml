@@ -1,0 +1,2787 @@
+#add new light
+#1 add mqtt component
+#2 add light to either table button or ceiling button component
+#3 update script update_room or update_mode remember to change array number to the same as the number of lights
+#4 add light to both up and down button for either ceiling or table up/downs
+
+#add new switch for room
+#1 add binary sensor (button on the display) triggers mqtt command
+#2 add mqtt component (updates button value when receiving a command)
+
+# Set some variables for convenience
+substitutions:
+  node_name: nsp-kitchen-island
+  device_name: NSP Kitchen Island
+  deviceroom: Kitchen
+
+external_components:
+  - source: github://pr#2956
+    components: [nextion]
+    refresh: 1h
+
+esphome:
+  name: $node_name
+  comment: $device_name
+  includes: common_includes.h
+
+esp32:
+  board: esp32dev
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+#  use_address: nsp-kitchen-entryway.local
+
+# Enable logging
+logger:
+  level: NONE
+  logs:
+    mqtt.component: NONE
+    mqtt.client: NONE
+# Enable wireless updates
+ota:
+
+mqtt:
+  broker: 192.168.32.2
+  username: username
+  password: password
+  id: mqtt_client
+  discovery: false
+  will_message:
+#  log_topic: null
+
+#Sets text component in upper right corner to current time
+time:
+  - platform: sntp
+    id: sntp_time
+    on_time:
+      - seconds: 0
+        minutes: '*'
+        then:
+          - lambda: |-
+              auto time_text = id(sntp_time).now().strftime("%H:%M");
+              id(disp1).set_component_text("t_time", time_text.c_str());
+
+# Backup way to upload tft file when not having a button to press to trigger the upload. Upload will start 2 min after boot.
+#  - platform: sntp
+#    on_time:
+#     # Every 5 minutes
+#      - seconds: 0
+#        minutes: /2
+#        then:
+#          - lambda: 'id(disp1)->upload_tft();'
+
+globals:
+     #This is the only thing that is unique for each panel. If panel is placed in Kitchen Set "initual_value" to Kitchen. 
+     #Used in rule to reset to main page after sleep rule among other things.
+   - id: device
+     type: std::string
+     restore_value: no
+     initial_value: '"$deviceroom"'
+     
+   - id: currentroom
+     #type: char
+     type: std::string
+     restore_value: no
+     initial_value: '"$deviceroom"'
+     
+   - id: mode
+     #type: char
+     type: std::string
+     restore_value: no
+     initial_value: '"All Lights"'
+
+   - id: event
+     type: std::string
+     restore_value: no
+     initial_value: '""'
+     
+     
+   - id: ceilingmax
+     type: int
+     restore_value: no
+     initial_value: '30'
+     
+   - id: tablemax
+     type: int
+     restore_value: no
+     initial_value: '30'
+     
+   - id: soundaverage
+     type: int
+     restore_value: no
+     initial_value: '30'
+
+script:
+  - id: update_room  #Used to re-write the icons and values on main page when a room change is done.
+    then:
+        - lambda: |-
+            if (id(currentroom) == "Entryway") {
+              if (id(mode) == "Sound" ) {
+                id(disp1).set_component_value("home.n_bright", id(oh_entryway_speaker_volume).state);
+                //No speaker in this room. Set picc to 3
+                id(disp1).set_component_picc("home.bright", 3);
+
+              }
+              //UPDATE CEILING LIGHTS SYMBOL
+              if (id(oh_entryway_c1).state == 0) { 
+                id(disp1).set_component_value("home.b_ceiling", 0); 
+                id(disp1).set_component_value("home.n_ceiling", 0);
+
+              }
+              else {
+                int arr[] = { id(oh_entryway_c1).state };
+                
+                  int i;
+                  int n = 1; 
+                  // Initialize maximum element
+                  int max = arr[0];
+               
+                  // Traverse array elements
+                  // from second and compare
+                  // every element with current max
+                  for (i = 1; i < n; i++)
+                      if (arr[i] > max)
+                          max = arr[i];
+
+                    id(ceilingmax) = max;
+                    id(disp1).set_component_value("home.b_ceiling", 1);
+                    id(disp1).set_component_value("home.n_ceiling", id(ceilingmax));
+              }
+              //No table lights in this room. Zeroising table symbol
+              id(disp1).set_component_value("home.b_table", 0); 
+              id(disp1).set_component_value("home.n_table", 0);
+        
+            }
+            else if (id(currentroom) == "Kitchen") {
+              if (id(mode) == "Sound" ) {
+                id(disp1).set_component_value("home.n_bright", id(oh_kitchen_speaker_volume).state);
+                if (id(oh_kitchen_speaker_stop).state == 1) {
+                  id(disp1).set_component_picc("home.bright", 3);
+                }
+                else {
+                  id(disp1).set_component_picc("home.bright", 4);
+                }
+              }
+              //UPDATE CEILING LIGHTS SYMBOL
+              if (id(oh_kitchen_c1).state == 0) { 
+                id(disp1).set_component_value("home.b_ceiling", 0); 
+                id(disp1).set_component_value("home.n_ceiling", 0);
+
+              }
+              else {
+                int arr[] = { id(oh_kitchen_c1).state };
+                
+                  int i;
+                  int n = 1; 
+                  // Initialize maximum element
+                  int max = arr[0];
+               
+                  // Traverse array elements
+                  // from second and compare
+                  // every element with current max
+                  for (i = 1; i < n; i++)
+                      if (arr[i] > max)
+                          max = arr[i];
+
+                    id(ceilingmax) = max;
+                    id(disp1).set_component_value("home.b_ceiling", 1);
+                    id(disp1).set_component_value("home.n_ceiling", id(ceilingmax));
+              }
+              //UPDATE TABLE LIGHTS SYMBOL
+              if (id(oh_kitchen_t1).state == 0 and id(oh_kitchen_t2).state == 0) { 
+                id(disp1).set_component_value("home.b_table", 0); 
+                id(disp1).set_component_value("home.n_table", 0);
+
+              }
+              else {
+                int arr[] = { id(oh_kitchen_t1).state, id(oh_kitchen_t2).state };
+                
+                  int i;
+                  int n = 2; 
+                  // Initialize maximum element
+                  int max = arr[0];
+               
+                  // Traverse array elements
+                  // from second and compare
+                  // every element with current max
+                  for (i = 1; i < n; i++)
+                      if (arr[i] > max)
+                          max = arr[i];
+
+                    id(tablemax) = max;
+                    id(disp1).set_component_value("home.b_table", 1);
+                    id(disp1).set_component_value("home.n_table", id(tablemax));
+              }
+              
+            }
+            else if (id(currentroom) == "Livingroom") {
+              if (id(mode) == "Sound" ) {
+                id(disp1).set_component_value("home.n_bright", id(oh_livingroom_speaker_volume).state);
+                //No speaker in this room. Set picc to 3
+                id(disp1).set_component_picc("home.bright", 3);
+              }
+              //UPDATE CEILING LIGHHTS
+              if (id(oh_livingroom_c1).state == 0) { 
+                id(disp1).set_component_value("home.b_ceiling", 0); 
+                id(disp1).set_component_value("home.n_ceiling", 0);
+
+              }
+              else {
+                int arr[] = { id(oh_livingroom_c1).state };
+                
+                  int i;
+                  int n = 1; 
+                  // Initialize maximum element
+                  int max = arr[0];
+               
+                  // Traverse array elements
+                  // from second and compare
+                  // every element with current max
+                  for (i = 1; i < n; i++)
+                      if (arr[i] > max)
+                          max = arr[i];
+
+                    id(ceilingmax) = max;
+                    id(disp1).set_component_value("home.b_ceiling", 1);
+                    id(disp1).set_component_value("home.n_ceiling", id(ceilingmax));
+              }
+              //UPDATE TABLE LIGHTS SYMBOL
+              if (id(oh_livingroom_t1).state == 0 and id(oh_livingroom_t2).state == 0) { 
+                id(disp1).set_component_value("home.b_table", 0); 
+                id(disp1).set_component_value("home.n_table", 0);
+
+              }
+              else {
+                int arr[] = { id(oh_livingroom_t1).state, id(oh_livingroom_t2).state };
+                
+                  int i;
+                  int n = 2;
+                  // Initialize maximum element
+                  int max = arr[0];
+               
+                  // Traverse array elements
+                  // from second and compare
+                  // every element with current max
+                  for (i = 1; i < n; i++)
+                      if (arr[i] > max)
+                          max = arr[i];
+
+                    id(tablemax) = max;
+                    id(disp1).set_component_value("home.b_table", 1);
+                    id(disp1).set_component_value("home.n_table", id(tablemax));
+              }
+              //No ceiling lights in this room. Zeroising ceiling symbol
+              //id(disp1).set_component_value("home.b_ceiling", 0); 
+              //id(disp1).set_component_value("home.n_ceiling", 0);
+              
+            }
+            else if (id(currentroom) == "BedroomE") {
+              if (id(mode) == "Sound" ) {
+                id(disp1).set_component_value("home.n_bright", id(oh_bedroomE_speaker_volume).state);
+                if (id(oh_bedroomE_speaker_stop).state == 1) {
+                  id(disp1).set_component_picc("home.bright", 3);
+                }
+                else {
+                  id(disp1).set_component_picc("home.bright", 4);
+                }
+              }
+              //UPDATE CEILING LIGHTS SYMBOL
+              if (id(oh_bedroomE_c1).state == 0) { 
+                id(disp1).set_component_value("home.b_ceiling", 0); 
+                id(disp1).set_component_value("home.n_ceiling", 0);
+
+              }
+              else {
+                int arr[] = { id(oh_bedroomE_c1).state };
+                
+                  int i;
+                  int n = 1; 
+                  // Initialize maximum element
+                  int max = arr[0];
+               
+                  // Traverse array elements
+                  // from second and compare
+                  // every element with current max
+                  for (i = 1; i < n; i++)
+                      if (arr[i] > max)
+                          max = arr[i];
+
+                    id(ceilingmax) = max;
+                    id(disp1).set_component_value("home.b_ceiling", 1);
+                    id(disp1).set_component_value("home.n_ceiling", id(ceilingmax));
+              }
+              //UPDATE TABLE LIGHTS SYMBOL
+              if (id(oh_bedroomE_t1).state == 0 and id(oh_bedroomE_t2).state == 0 and id(oh_bedroomE_t3).state == 0 and id(oh_bedroomE_t4).state == 0 and id(oh_bedroomE_t5).state == 0) { 
+                id(disp1).set_component_value("home.b_table", 0); 
+                id(disp1).set_component_value("home.n_table", 0);
+
+              }
+              else {
+                int arr[] = { id(oh_bedroomE_t2).state, id(oh_bedroomE_t3).state, id(oh_bedroomE_t4).state, id(oh_bedroomE_t5).state };
+                
+                  int i;
+                  int n = 4;
+                  // Initialize maximum element
+                  int max = arr[0];
+               
+                  // Traverse array elements
+                  // from second and compare
+                  // every element with current max
+                  for (i = 1; i < n; i++)
+                      if (arr[i] > max)
+                          max = arr[i];
+
+                    id(tablemax) = max;
+                    id(disp1).set_component_value("home.b_table", 1);
+                    id(disp1).set_component_value("home.n_table", id(tablemax));
+              }
+              
+            }
+
+            else if (id(currentroom) == "BedroomT") {
+              if (id(mode) == "Sound" ) {
+                id(disp1).set_component_value("home.n_bright", id(oh_bedroomT_speaker_volume).state);
+                if (id(oh_bedroomT_speaker_stop).state == 1) {
+                  id(disp1).set_component_picc("home.bright", 3);
+                }
+                else {
+                  id(disp1).set_component_picc("home.bright", 4);
+                }
+              }
+              //UPDATE TABLE LIGHTS SYMBOL        
+              if (id(oh_bedroomT_t1).state == 0 and id(oh_bedroomT_t2).state == 0) { 
+                id(disp1).set_component_value("home.b_table", 0); 
+                id(disp1).set_component_value("home.n_table", 0);
+
+              }
+              else {
+                int arr[] = { id(oh_bedroomT_t1).state, id(oh_bedroomT_t2).state };
+                
+                  int i;
+                  int n = 2;
+                  // Initialize maximum element
+                  int max = arr[0];
+               
+                  // Traverse array elements
+                  // from second and compare
+                  // every element with current max
+                  for (i = 1; i < n; i++)
+                      if (arr[i] > max)
+                          max = arr[i];
+
+                    id(tablemax) = max;
+                    id(disp1).set_component_value("home.b_table", 1);
+                    id(disp1).set_component_value("home.n_table", id(tablemax));
+              }
+              //No ceiling lights in this room. Zeroising ceiling symbol
+              id(disp1).set_component_value("home.b_ceiling", 0); 
+              id(disp1).set_component_value("home.n_ceiling", 0);
+            }
+            
+            else if (id(currentroom) == "Bathroom") {
+              if (id(mode) == "Sound" ) {
+                id(disp1).set_component_value("home.n_bright", id(oh_bathroom_speaker_volume).state);
+                if (id(oh_bathroom_speaker_stop).state == 1) {
+                  id(disp1).set_component_picc("home.bright", 3);
+                }
+                else {
+                  id(disp1).set_component_picc("home.bright", 4);
+                }
+              }
+              //UPDATE CEILING LIGHTS SYMBOL
+              if (id(oh_bathroom_relay1).state == 0 and id(oh_bathroom_relay2).state == 0) { 
+                id(disp1).set_component_value("home.b_ceiling", 0); 
+                id(disp1).set_component_value("home.n_ceiling", 0);
+
+              }
+              else {
+                    id(disp1).set_component_value("home.b_ceiling", 1);
+                    id(disp1).set_component_value("home.n_ceiling", 100);
+              }
+              //UPDATING TABLE LIGHTS SYMBOL
+              if (id(oh_bathroom_t1).state == 0) { 
+                id(disp1).set_component_value("home.b_table", 0); 
+                id(disp1).set_component_value("home.n_table", 0);
+
+              }
+              else {
+                int arr[] = { id(oh_bathroom_t1).state };
+                
+                  int i;
+                  int n = 1; 
+                  // Initialize maximum element
+                  int max = arr[0];
+               
+                  // Traverse array elements
+                  // from second and compare
+                  // every element with current max
+                  for (i = 1; i < n; i++)
+                      if (arr[i] > max)
+                          max = arr[i];
+
+                    id(tablemax) = max;
+                    id(disp1).set_component_value("home.b_table", 1);
+                    id(disp1).set_component_value("home.n_table", id(tablemax));
+              }
+              //No ceiling lights in this room. Zeroising ceiling symbol
+              //id(disp1).set_component_value("home.b_ceiling", 0); 
+              //id(disp1).set_component_value("home.n_ceiling", 0);
+              
+            }
+            if (id(mode) == "Sound") {
+                if (id(oh_speakergroup_stop).state == 1) {
+                  id(disp1).set_component_picc("home.kelvin", 3);
+                }
+                else {
+                  id(disp1).set_component_picc("home.kelvin", 4);
+                }
+            }
+            
+            
+  - id: update_mode #triggered when switching between All Lights and Sound mode. Update icons and values to current states.
+    then:
+        - lambda: |-
+            if (id(mode) == "All Lights") {
+            
+              if (id(oh_all_lights).state == 1) { 
+                id(disp1).set_component_picc("home.bright", 2);
+              }
+              else {
+                id(disp1).set_component_picc("home.bright", 1);
+              }
+
+              id(disp1).set_component_picc("home.kelvin", 1);
+              id(disp1).set_component_value("home.n_bright", id(oh_all_brightness).state);
+              id(disp1).set_component_value("home.n_kelvin", id(oh_all_kelvin).state);
+              
+            }
+            else if (id(mode) == "Sound") {
+              //id(disp1).set_component_picc("home.bright", 3);
+              //id(disp1).set_component_picc("home.kelvin", 3);
+              //Setting up Homegroup value and icon before going through rooms
+              if (id(oh_speakergroup_stop).state == 1) {
+                  id(disp1).set_component_picc("home.kelvin", 3);
+              }
+              else {
+                id(disp1).set_component_picc("home.kelvin", 4);
+              }
+              id(disp1).set_component_value("home.n_kelvin", id(soundaverage));
+
+              if (id(currentroom) == "Entryway" ) {
+                id(disp1).set_component_value("home.n_bright", id(oh_entryway_speaker_volume).state);
+                //No speaker set picc to 3 = grayed out speaker
+                id(disp1).set_component_picc("home.bright", 3);
+              }
+              else if (id(currentroom) == "Kitchen" ) {
+                id(disp1).set_component_value("home.n_bright", id(oh_kitchen_speaker_volume).state);
+                if (id(oh_kitchen_speaker_stop).state == 1) {
+                  id(disp1).set_component_picc("home.bright", 3);
+                }
+                else {
+                  id(disp1).set_component_picc("home.bright", 4);
+                }
+              }
+              else if (id(currentroom) == "Livingroom" ) {
+                id(disp1).set_component_value("home.n_bright", id(oh_livingroom_speaker_volume).state);
+                //No speaker set picc to 3 = grayed out speaker
+                id(disp1).set_component_picc("home.bright", 3);
+              }
+              else if (id(currentroom) == "BedroomE" ) {
+                id(disp1).set_component_value("home.n_bright", id(oh_bedroomE_speaker_volume).state);
+                if (id(oh_bedroomE_speaker_stop).state == 1) {
+                  id(disp1).set_component_picc("home.bright", 3);
+                }
+                else {
+                  id(disp1).set_component_picc("home.bright", 4);
+                }
+              }
+              else if (id(currentroom) == "BedroomT" ) {
+                id(disp1).set_component_value("home.n_bright", id(oh_bedroomT_speaker_volume).state);
+                if (id(oh_bedroomT_speaker_stop).state == 1) {
+                  id(disp1).set_component_picc("home.bright", 3);
+                }
+                else {
+                  id(disp1).set_component_picc("home.bright", 4);
+                }
+              }                  
+              else if (id(currentroom) == "Bathroom" ) {
+                id(disp1).set_component_value("home.n_bright", id(oh_bathroom_speaker_volume).state);
+                if (id(oh_bathroom_speaker_stop).state == 1) {
+                  id(disp1).set_component_picc("home.bright", 3);
+                }
+                else {
+                  id(disp1).set_component_picc("home.bright", 4);
+                }
+              }
+            }
+  - id: speaker_average # calculates the average volume on all speakers
+    mode: restart
+    then:
+        - lambda: |-
+        
+            id(soundaverage) = (id(oh_kitchen_speaker_volume).state + id(oh_bedroomE_speaker_volume).state + id(oh_bedroomT_speaker_volume).state + id(oh_bathroom_speaker_volume).state) / 4;
+            if (id(mode) == "Sound") {
+              id(disp1).set_component_value("home.n_kelvin", id(soundaverage));
+            }
+            //id(oh_entryway_speaker_volume).state + id(oh_livingroom_speaker_volume).state + 
+            
+  - id: physical_switch
+    mode: restart
+    then:
+        - lambda: |-
+        
+            if (id(currentroom) == id(device).c_str()) {
+            
+              if (id(currentroom) == "Entryway") {
+              }
+              else if (id(currentroom) == "Kitchen") {
+              }
+              else if (id(currentroom) == "Livingroom") {
+              }
+              else if (id(currentroom) == "BedroomE") {
+              }
+              else if (id(currentroom) == "BedroomT") {
+              }            
+              else if (id(currentroom) == "Bathroom") {
+                if (id(relay_1).state == false and id(relay_2).state == false) {
+                    id(disp1).set_component_value("home.b_ceiling", 0); 
+                    id(disp1).set_component_value("home.n_ceiling", 0);
+
+                }
+                else {
+                    id(disp1).set_component_value("home.b_ceiling", 1); 
+                    id(disp1).set_component_value("home.n_ceiling", 100);
+                }
+              }
+            }
+            
+
+# Define some inputs
+binary_sensor:
+    #Left physical button
+  - platform: gpio
+    internal: true
+    name: $device_name Left Button
+    pin:
+      number: 14
+      inverted: true
+    on_click:
+      - lambda: |-
+          if (id(device) == "Bathroom") {
+              if (id(oh_bathroom_relay1).state >= 1) { 
+                    id(mqtt_client).publish("oh/Bathroom/relay1", "0");
+              }
+              else {
+                    id(mqtt_client).publish("oh/Bathroom/relay1", "100");
+              }
+          }
+          else if (id(device) == "Kitchen") {
+            id(mqtt_client).publish("oh/kitchen/autocoffee", "1");
+          }
+          else {
+            id(relay_1).toggle();
+
+          }
+                  
+    #Right physical button
+  - platform: gpio
+    internal: true
+    name: $device_name Right Button
+    pin:
+      number: 27
+      inverted: true
+    on_click:
+      - lambda: |-
+          if (id(device) == "Bathroom") {
+              if (id(oh_bathroom_relay2).state >= 1) { 
+                    id(mqtt_client).publish("oh/Bathroom/relay2", "0");
+              }
+              else {
+                    id(mqtt_client).publish("oh/Bathroom/relay2", "100");
+              }
+          }
+          else if (id(device) == "Kitchen") {
+            id(mqtt_client).publish("oh/kitchen/autodishwasher", "1");
+          }
+          else {
+            id(relay_2).toggle();
+          }
+
+  #Ceiling lights button increase
+  - platform: nextion
+    internal: true
+    name: $device_name Button 1 UP
+    id: nsp_b1up
+    page_id: 2
+    component_id: 3
+    on_release:
+      then:
+        - lambda: |-
+            int a = 0;
+            int b = 0;
+            int n = id(ceilingmax);
+            if (n % 10) { //does not end with 0
+              // Smaller multiple for DOWN button
+              a = (n / 10) * 10;
+              // Larger multiple for UP button
+              b = a + 10;
+              
+            }
+            else {
+              b = n + 10;
+            }
+            if (b <= 100) {
+              if (id(currentroom) == "Entryway") {
+                if (id(oh_entryway_c1).state >= 1) { 
+                  id(mqtt_client).publish("oh/entryway/c1", esphome::to_string(b));
+                }
+              }
+              else if (id(currentroom) == "Kitchen") {
+                if (id(oh_kitchen_c1).state >= 1) { 
+                  id(mqtt_client).publish("oh/kitchen/c1", esphome::to_string(b));
+                }
+              }
+              else if (id(currentroom) == "Livingroom") {
+                if (id(oh_livingroom_c1).state >= 1) { 
+                  id(mqtt_client).publish("oh/livingroom/c1", esphome::to_string(b));
+                }                          
+              }
+              else if (id(currentroom) == "BedroomE") {
+                if (id(oh_bedroomE_c1).state >= 1) { 
+                  id(mqtt_client).publish("oh/bedroomE/c1", esphome::to_string(b));
+                }
+              }
+              else if (id(currentroom) == "BedroomT") {
+                //No ceiling lights
+              }
+              else if (id(currentroom) == "Bathroom") {
+                //No ceiling lights at the moment
+              }
+            }
+            else {
+              //Light is 100 can't increase.
+            }
+  #Ceiling lights button decrease
+  - platform: nextion
+    internal: true
+    name: $device_name Button 1 DOWN
+    id: nsp_b1down
+    page_id: 2
+    component_id: 5
+    on_release:
+      then:
+        - lambda: |-
+            int a = 0;
+            int b = 0;
+            int n = id(ceilingmax);
+            
+            if (n > 5 and n <= 10) {
+              a = 5;
+            }
+            
+            else if (n % 10) { //does not end with 0
+              // Smaller multiple for DOWN button
+              a = (n / 10) * 10;
+              // Larger multiple for UP button
+              b = a + 10;
+
+              
+            }
+            else {
+              a = n - 10;
+            }
+            if (a >= 5) {
+              if (id(currentroom) == "Entryway") {
+                if (id(oh_entryway_c1).state >= 1) { 
+                  id(mqtt_client).publish("oh/entryway/c1", esphome::to_string(a));
+                }
+              }
+              else if (id(currentroom) == "Kitchen") {
+                if (id(oh_kitchen_c1).state >= 1) { 
+                  id(mqtt_client).publish("oh/kitchen/c1", esphome::to_string(a));
+                }
+              }
+              else if (id(currentroom) == "Livingroom") {
+                if (id(oh_livingroom_c1).state >= 1) { 
+                  id(mqtt_client).publish("oh/livingroom/c1", esphome::to_string(a));
+                }                
+              }
+              else if (id(currentroom) == "BedroomE") {
+                if (id(oh_bedroomE_c1).state >= 1) { 
+                  id(mqtt_client).publish("oh/bedroomE/c1", esphome::to_string(a));
+                }
+              }
+              else if (id(currentroom) == "BedroomT") {
+                //No ceiling lights
+              }
+              else if (id(currentroom) == "Bathroom") {
+                //No ceiling lights at the moment
+              }
+            }
+            else {
+              //Below 5. Don't decrease more.
+            }
+  #Table lights button increase
+  - platform: nextion
+    internal: true
+    name: $device_name Button 2 UP
+    id: nsp_b2up
+    page_id: 2
+    component_id: 4
+    on_release:
+      then:
+        - lambda: |-
+            int a = 0;
+            int b = 0;
+            int n = id(tablemax);
+            if (n % 10) { //does not end with 0
+              // Smaller multiple for DOWN button
+              a = (n / 10) * 10;
+              // Larger multiple for UP button
+              b = a + 10;
+              
+            }
+            else {
+              b = n + 10;
+            }
+            if (b <= 100) {
+            
+              if (id(currentroom) == "Entryway") {
+                //No table lights
+              }
+              else if (id(currentroom) == "Kitchen") {
+                if (id(oh_kitchen_t1).state >= 1) { 
+                  id(mqtt_client).publish("oh/kitchen/t1", esphome::to_string(b));
+                }
+                if (id(oh_kitchen_t2).state >= 1) { 
+                  id(mqtt_client).publish("oh/kitchen/t2", esphome::to_string(b));
+                }
+              }
+              else if (id(currentroom) == "Livingroom") {
+                if (id(oh_livingroom_t1).state >= 1) { 
+                  id(mqtt_client).publish("oh/livingroom/t1", esphome::to_string(b));
+                }
+                if (id(oh_livingroom_t2).state >= 1) { 
+                  id(mqtt_client).publish("oh/livingroom/t2", esphome::to_string(b));
+                }
+              }
+              else if (id(currentroom) == "BedroomE") {
+                if (id(oh_bedroomE_t1).state >= 1) { 
+                  id(mqtt_client).publish("oh/bedroomE/t1", esphome::to_string(b));
+                }
+                if (id(oh_bedroomE_t2).state >= 1) { 
+                  id(mqtt_client).publish("oh/bedroomE/t2", esphome::to_string(b));
+                }
+                if (id(oh_bedroomE_t3).state >= 1) { 
+                  id(mqtt_client).publish("oh/bedroomE/t3", esphome::to_string(b));
+                }
+                if (id(oh_bedroomE_t4).state >= 1) { 
+                  id(mqtt_client).publish("oh/bedroomE/t4", esphome::to_string(b));
+                }
+                if (id(oh_bedroomE_t5).state >= 1) { 
+                  id(mqtt_client).publish("oh/bedroomE/t5", esphome::to_string(b));
+                }
+              }
+              else if (id(currentroom) == "BedroomT") {
+                if (id(oh_bedroomT_t1).state >= 1) { 
+                  id(mqtt_client).publish("oh/bedroomT/t1", esphome::to_string(b));
+                }
+                if (id(oh_bedroomT_t2).state >= 1) { 
+                  id(mqtt_client).publish("oh/bedroomT/t2", esphome::to_string(b));
+                }
+              }
+              else if (id(currentroom) == "Bathroom") {
+                if (id(oh_bathroom_t1).state >= 1) { 
+                  id(mqtt_client).publish("oh/bathroom/t1", esphome::to_string(b));
+                }
+              }
+            }
+            else {
+              //Light is 100 can't increase.
+            }
+  #Table lights button decrease
+  - platform: nextion
+    internal: true
+    name: $device_name Button 2 DOWN
+    id: nsp_b2down
+    page_id: 2
+    component_id: 6
+    on_release:
+      then:
+        - lambda: |-
+            int a = 0;
+            int b = 0;
+            int n = id(tablemax);
+            
+            if (n > 5 and n <= 10) {
+              a = 5;
+            }
+            else if (n % 10) { //does not end with 0
+              // Smaller multiple for DOWN button
+              a = (n / 10) * 10;
+              // Larger multiple for UP button
+              b = a + 10;
+
+              
+            }
+            else {
+              a = n - 10;
+            }
+            if (a >= 5) {
+              if (id(currentroom) == "Entryway") {
+                //No table lights
+              }
+              else if (id(currentroom) == "Kitchen") {
+                if (id(oh_kitchen_t1).state >= 1) { 
+                  id(mqtt_client).publish("oh/kitchen/t1", esphome::to_string(a));
+                }
+                if (id(oh_kitchen_t2).state >= 1) { 
+                  id(mqtt_client).publish("oh/kitchen/t2", esphome::to_string(a));
+                }
+              }
+              if (id(currentroom) == "Livingroom") {
+                if (id(oh_livingroom_t1).state >= 1) { 
+                  id(mqtt_client).publish("oh/livingroom/t1", esphome::to_string(a));
+                }
+                if (id(oh_livingroom_t2).state >= 1) { 
+                  id(mqtt_client).publish("oh/livingroom/t2", esphome::to_string(a));
+                }
+              }
+              else if (id(currentroom) == "BedroomE") {
+                if (id(oh_bedroomE_t1).state >= 1) { 
+                  id(mqtt_client).publish("oh/bedroomE/t1", esphome::to_string(a));
+                }
+                if (id(oh_bedroomE_t2).state >= 1) { 
+                  id(mqtt_client).publish("oh/bedroomE/t2", esphome::to_string(a));
+                }
+                if (id(oh_bedroomE_t3).state >= 1) { 
+                  id(mqtt_client).publish("oh/bedroomE/t3", esphome::to_string(a));
+                }
+                if (id(oh_bedroomE_t4).state >= 1) { 
+                  id(mqtt_client).publish("oh/bedroomE/t4", esphome::to_string(a));
+                }
+                if (id(oh_bedroomE_t5).state >= 1) { 
+                  id(mqtt_client).publish("oh/bedroomE/t5", esphome::to_string(a));
+                }
+              }
+              else if (id(currentroom) == "BedroomT") {
+                if (id(oh_bedroomT_t1).state >= 1) { 
+                  id(mqtt_client).publish("oh/bedroomT/t1", esphome::to_string(a));
+                }
+                if (id(oh_bedroomT_t2).state >= 1) { 
+                  id(mqtt_client).publish("oh/bedroomT/t2", esphome::to_string(a));
+                }                
+              }
+              
+              else if (id(currentroom) == "Bathroom") {
+                if (id(oh_bathroom_t1).state >= 1) { 
+                  id(mqtt_client).publish("oh/bathroom/t1", esphome::to_string(a));
+                }
+              }
+            }
+            else {
+              //Below 5. Don't decrease more.
+            }
+  #Global brightness or single speaker increase
+  - platform: nextion
+    internal: true
+    name: $device_name Button 3 UP
+    id: nsp_b3up
+    page_id: 2
+    component_id: 17
+    on_release:
+      then:
+        - lambda: |-
+            if (id(mode) == "All Lights") {
+
+              int a = 0;
+              int b = 0;
+              int n = id(oh_all_brightness).state;
+              if (n % 10) { //does not end with 0
+                // Smaller multiple for DOWN button
+                a = (n / 10) * 10;
+                // Larger multiple for UP button
+                b = a + 10;
+                
+              }
+              else {
+                b = n + 10;
+              }
+              if (b <= 100) {
+                if (id(oh_all_brightness).state >= 1) { 
+                  id(mqtt_client).publish("oh/all_brightness", esphome::to_string(b));
+                }
+                
+              }
+              else {
+                //Light is 100 can't increase.
+              }
+            }
+            else if (id(mode) == "Sound") {
+              
+              int a = 0;
+              int b = 0;
+              int n = 0;
+              if (id(currentroom) == "Entryway") {
+                n = id(oh_entryway_speaker_volume).state;
+              }
+              else if (id(currentroom) == "Kitchen") {
+                n = id(oh_kitchen_speaker_volume).state;
+              }
+              else if (id(currentroom) == "Livingroom") {
+                n = id(oh_livingroom_speaker_volume).state;
+              }
+              else if (id(currentroom) == "BedroomE") {
+                n = id(oh_bedroomE_speaker_volume).state;
+              }
+              else if (id(currentroom) == "BedroomT") {
+                n = id(oh_bedroomT_speaker_volume).state;
+              }
+              else if (id(currentroom) == "Bathroom") {
+                n = id(oh_bathroom_speaker_volume).state;
+              }
+              
+              if (n % 10) { //does not end with 0
+                // Smaller multiple for DOWN button
+                a = (n / 10) * 10;
+                // Larger multiple for UP button
+                b = a + 10;
+                
+              }
+              else {
+                b = n + 10;
+              }
+              if (b <= 100) {
+                if (id(currentroom) == "Entryway") {
+                    id(mqtt_client).publish("oh/entryway/speaker/volume", esphome::to_string(b));
+                }
+                if (id(currentroom) == "Kitchen") {
+                    id(mqtt_client).publish("oh/kitchen/speaker/volume", esphome::to_string(b));
+                }
+                else if (id(currentroom) == "Livingroom") {
+                    id(mqtt_client).publish("oh/livingroom/speaker/volume", esphome::to_string(b));
+                }
+                else if (id(currentroom) == "BedroomE") {
+                    id(mqtt_client).publish("oh/bedroomE/speaker/volume", esphome::to_string(b));
+                }
+                else if (id(currentroom) == "BedroomT") {
+                    id(mqtt_client).publish("oh/bedroomT/speaker/volume", esphome::to_string(b));
+                }
+                else if (id(currentroom) == "Bathroom") {
+                    id(mqtt_client).publish("oh/bathroom/speaker/volume", esphome::to_string(b));
+                }
+              }
+              else {
+                //Volume is 100 can't increase.
+              }
+              
+            }
+  #Global brightness or single speaker decrease
+  - platform: nextion
+    internal: true
+    name: $device_name Button 3 DOWN
+    id: nsp_b3down
+    page_id: 2
+    component_id: 19
+    on_release:
+      then:
+        - lambda: |-
+            if (id(mode) == "All Lights") {
+              int a = 0;
+              int b = 0;
+              int n = id(oh_all_brightness).state;
+              
+              if (n > 5 and n <= 10) {
+              a = 5;
+              }
+              else if (n % 10) { //does not end with 0
+                // Smaller multiple for DOWN button
+                a = (n / 10) * 10;
+                // Larger multiple for UP button
+                b = a + 10;
+                
+              }
+              else {
+                a = n - 10;
+              }
+              if (a >= 5) {
+              
+                  if (id(oh_all_brightness).state >= 1) { 
+                    id(mqtt_client).publish("oh/all_brightness", esphome::to_string(a));
+                  }
+              }
+              else {
+                //Below 5. Don't decrease more.
+              }
+            }
+            else if (id(mode) == "Sound") {
+              
+              int a = 0;
+              int b = 0;
+              int n = 0;
+              if (id(currentroom) == "Entryway") {
+                n = id(oh_entryway_speaker_volume).state;
+              }
+              else if (id(currentroom) == "Kitchen") {
+                n = id(oh_kitchen_speaker_volume).state;
+              }
+              else if (id(currentroom) == "Livingroom") {
+                n = id(oh_livingroom_speaker_volume).state;
+              }
+              else if (id(currentroom) == "BedroomE") {
+                n = id(oh_bedroomE_speaker_volume).state;
+              }
+              else if (id(currentroom) == "BedroomT") {
+                n = id(oh_bedroomT_speaker_volume).state;
+              }
+              else if (id(currentroom) == "Bathroom") {
+                n = id(oh_bathroom_speaker_volume).state;
+              }
+              
+              if (n % 10) { //does not end with 0
+                // Smaller multiple for DOWN button
+                a = (n / 10) * 10;
+                // Larger multiple for UP button
+                b = a + 10;
+                
+              }
+              else {
+                a = n - 10;
+              }
+              if (a >= 0) {
+                if (id(currentroom) == "Entryway") {
+                    id(mqtt_client).publish("oh/entryway/speaker/volume", esphome::to_string(a));
+                }
+                else if (id(currentroom) == "Kitchen") {
+                    id(mqtt_client).publish("oh/kitchen/speaker/volume", esphome::to_string(a));
+                }
+                else if (id(currentroom) == "Livingroom") {
+                    id(mqtt_client).publish("oh/livingroom/speaker/volume", esphome::to_string(a));
+                }
+                else if (id(currentroom) == "BedroomE") {
+                    id(mqtt_client).publish("oh/bedroomE/speaker/volume", esphome::to_string(a));
+                }
+                else if (id(currentroom) == "BedroomT") {
+                    id(mqtt_client).publish("oh/bedroomT/speaker/volume", esphome::to_string(a));
+                }                  
+                else if (id(currentroom) == "Bathroom") {
+                    id(mqtt_client).publish("oh/bathroom/speaker/volume", esphome::to_string(a));
+                }
+              }
+              else {
+                //Volume is 0 can't decrease.
+              }  
+            }
+
+  #Global kelvin or speaker group increase
+  - platform: nextion
+    internal: true
+    name: $device_name Button 4 UP
+    id: nsp_b4up
+    page_id: 2
+    component_id: 18
+    on_release:
+      then:
+        - lambda: |-
+            if (id(mode) == "All Lights") {
+
+              int a = 0;
+              int b = 0;
+              int n = id(oh_all_kelvin).state;
+              if (n % 10) { //does not end with 0
+                // Smaller multiple for DOWN button
+                a = (n / 10) * 10;
+                // Larger multiple for UP button
+                b = a + 10;
+                
+              }
+              else {
+                b = n + 10;
+              }
+              if (b <= 100) {
+              
+                if (id(oh_all_kelvin).state >= 0) { 
+                  id(mqtt_client).publish("oh/all_kelvin", esphome::to_string(b));
+                }
+                
+              }
+              else {
+                //Light is 100 can't increase.
+              }
+            }
+            
+            else if (id(mode) == "Sound") {
+              int a = 0;
+              int b = 0;
+              int n = id(soundaverage);
+              if (n % 10) { //does not end with 0
+                // Smaller multiple for DOWN button
+                a = (n / 10) * 10;
+                // Larger multiple for UP button
+                b = a + 10;
+                
+              }
+              else {
+                b = n + 10;
+              }
+              id(soundaverage) = b;
+              if (b <= 100) {
+                id(disp1).set_component_value("home.n_kelvin", b);
+                id(mqtt_client).publish("oh/entryway/speaker/volume", esphome::to_string(b));
+                id(mqtt_client).publish("oh/kitchen/speaker/volume", esphome::to_string(b));
+                id(mqtt_client).publish("oh/livingroom/speaker/volume", esphome::to_string(b));
+                id(mqtt_client).publish("oh/bedroomE/speaker/volume", esphome::to_string(b));
+                id(mqtt_client).publish("oh/bedroomT/speaker/volume", esphome::to_string(b));
+                id(mqtt_client).publish("oh/bathroom/speaker/volume", esphome::to_string(b));
+              }
+              else {
+                //Light is 100 can't increase.
+              }
+ 
+            }
+  #Global kelvin or speaker group decrease
+  - platform: nextion
+    internal: true
+    name: $device_name Button 4 DOWN
+    id: nsp_b4down
+    page_id: 2
+    component_id: 20
+    on_release:
+      then:
+        - lambda: |-
+            if (id(mode) == "All Lights") {
+
+              int a = 0;
+              int b = 0;
+              int n = id(oh_all_kelvin).state;
+              if (n % 10) { //does not end with 0
+                // Smaller multiple for DOWN button
+                a = (n / 10) * 10;
+                // Larger multiple for UP button
+                b = a + 10;
+
+                
+              }
+              else {
+                a = n - 10;
+              }
+              if (a >= 0) {
+  
+                if (id(oh_all_kelvin).state >= 1) { 
+                  id(mqtt_client).publish("oh/all_kelvin", esphome::to_string(a));
+                }
+                
+              }
+              else {
+                //Light is 0 can't decrease.
+              }
+            }
+            else if (id(mode) == "Sound") {
+            
+              int a = 0;
+              int b = 0;
+              int n = id(soundaverage);
+              if (n % 10) { //does not end with 0
+                // Smaller multiple for DOWN button
+                a = (n / 10) * 10;
+                // Larger multiple for UP button
+                b = a + 10;
+  
+                  
+              }
+              else {
+                a = n - 10;
+              }
+              id(soundaverage) = b;
+
+              if (a >= 0) {
+    
+              id(disp1).set_component_value("home.n_kelvin", a);
+              id(mqtt_client).publish("oh/entryway/speaker/volume", esphome::to_string(a));
+              id(mqtt_client).publish("oh/kitchen/speaker/volume", esphome::to_string(a));
+              id(mqtt_client).publish("oh/livingroom/speaker/volume", esphome::to_string(a));
+              id(mqtt_client).publish("oh/bedroomE/speaker/volume", esphome::to_string(a));
+              id(mqtt_client).publish("oh/bedroomT/speaker/volume", esphome::to_string(a));
+              id(mqtt_client).publish("oh/bathroom/speaker/volume", esphome::to_string(a));              }
+              else {
+                //Light is 0 can't decrease.
+              }
+            }
+  #Changes room and triggers update_room script
+  - platform: nextion
+    internal: true
+    name: $device_name Next Room
+    id: nsp_nextroom
+    page_id: 2
+    component_id: 21
+    on_release:
+      then:
+        - lambda: |-
+            if (id(currentroom) == "Entryway") {
+              id(disp1).set_component_text("home.room", "Kitchen");
+              id(currentroom) = "Kitchen";
+    
+            }
+            else if (id(currentroom) == "Kitchen") {
+              id(disp1).set_component_text("home.room", "Livingroom");
+              id(currentroom) = "Livingroom";
+              
+            }
+            else if (id(currentroom) == "Livingroom") {
+              id(disp1).set_component_text("home.room", "Bedroom E");
+              id(currentroom) = "BedroomE";
+             
+            }
+            else if (id(currentroom) == "BedroomE") {
+              id(disp1).set_component_text("home.room", "Bedroom T");
+              id(currentroom) = "BedroomT";
+             
+            }
+            else if (id(currentroom) == "BedroomT") {
+              id(disp1).set_component_text("home.room", "Bathroom");
+              id(currentroom) = "Bathroom";
+           
+            }
+            else if (id(currentroom) == "Bathroom") {
+              id(disp1).set_component_text("home.room", "Entryway");
+              id(currentroom) = "Entryway";
+  
+            }
+        - script.execute: update_room
+        
+  #Button toggle all lights ON/OFF (brightness symbol) or Speaker Stop
+  - platform: nextion
+    internal: true
+    name: $device_name Brightness/Speaker
+    id: nsp_brightness_onoff
+    page_id: 2
+    component_id: 11
+    on_release:
+      then:
+        - lambda: |-
+            if (id(mode) == "All Lights") {
+              if (id(oh_all_lights).state == 1) { 
+                id(mqtt_client).publish("oh/all_lights", "0");
+                id(disp1).set_component_picc("home.bright", 1);
+
+  
+              }
+              else {
+                id(mqtt_client).publish("oh/all_lights", "1");
+                id(disp1).set_component_picc("home.bright", 2);
+                //Måste vara fel det här väl? id(disp1).set_component_value("home.b_table", 1); 
+
+              }
+              }
+              else if (id(mode) == "Sound") {
+
+                if (id(currentroom) == "Entryway") {
+                  //No speaker do nothing        
+                }
+                else if (id(currentroom) == "Kitchen") {
+                  if (id(oh_kitchen_speaker_stop).state == 0) {
+                    id(mqtt_client).publish("oh/kitchen/speaker/stop", "1");
+                  }
+                  else {
+                    //Speaker not playing do nothing
+                  }
+                  
+                }
+                else if (id(currentroom) == "Livingroom") {
+                  //No speaker do nothing               
+                }
+                else if (id(currentroom) == "BedroomE") {
+                  if (id(oh_bedroomE_speaker_stop).state == 0) {
+                    id(mqtt_client).publish("oh/bedroomE/speaker/stop", "1");
+                  }
+                  else {
+                    //Speaker not playing do nothing
+                  }
+                }
+                else if (id(currentroom) == "BedroomT") {
+                  if (id(oh_bedroomT_speaker_stop).state == 0) {
+                    id(mqtt_client).publish("oh/bedroomT/speaker/stop", "1");
+                  }
+                  else {
+                    //Speaker not playing do nothing
+                  }              
+                }
+                else if (id(currentroom) == "Bathroom") {
+                  if (id(oh_bathroom_speaker_stop).state == 0) {
+                    id(mqtt_client).publish("oh/bathroom/speaker/stop", "1");
+                  }
+                  else {
+                    //Speaker not playing do nothing
+                  }
+                }
+              }
+
+  #Button to stop speaker group playing
+  - platform: nextion
+    internal: true
+    name: $device_name Kelvin/Speakergroup
+    id: nsp_kelvin_onoff
+    page_id: 2
+    component_id: 12
+    on_release:
+      then:
+        - lambda: |-
+            if (id(mode) == "Sound") {
+              if (id(oh_speakergroup_stop).state == 0) {
+                id(mqtt_client).publish("oh/speakergroup/stop", "1");
+              }
+              else {
+                //Speaker not playing do nothing
+              }
+            }
+
+  #Button to enter current room
+  - platform: nextion
+    internal: true
+    name: $device_name Current Room
+    id: nsp_currentroom
+    page_id: 2
+    component_id: 7
+    on_release:
+      then:
+        - lambda: 'id(disp1).goto_page(id(currentroom).c_str());'
+
+  #Dynamic button that is hidden by default. id(event) is used to decide what should happen when button is pressed.
+  - platform: nextion
+    internal: true
+    name: $device_name Event Button
+    id: event_button
+    page_id: 2
+    component_id: 24
+    on_release:
+      then:
+        - lambda: |-     
+            if (id(event) == "unlock") {
+              id(mqtt_client).publish("oh/event", "hide");
+              id(mqtt_client).publish("oh/entryway/lock", "OFF");
+            }
+  #Changes between All Lights mode and Sound mode. 
+  - platform: nextion
+    internal: true
+    name: $device_name Mode
+    id: nsp_mode
+    page_id: 2
+    component_id: 8
+    on_release:
+      then:
+        - lambda: |-
+            if (id(mode) == "All Lights") {
+              id(disp1).set_component_text("home.mode", "Sound");
+              id(mode) = "Sound";
+              
+            }
+            else if (id(mode) == "Sound") {
+              id(disp1).set_component_text("home.mode", "All Lights");
+              id(mode) = "All Lights";
+            }
+            
+        - script.execute: update_mode        
+#                        id(ceilingmax) = max;     
+  #Turn ON/OFF Ceiling lights in current room.       
+  - platform: nextion
+    internal: true
+    name: $device_name Ceiling Button
+    id: nsp_ceiling
+    page_id: 2
+    component_id: 1
+    on_release:
+      then:
+        - lambda: |-
+            if (id(currentroom) == "Entryway") {
+              if (id(oh_entryway_c1).state >= 1) { 
+                id(mqtt_client).publish("oh/entryway/c1", "0");
+              }
+              else {
+                id(mqtt_client).publish("oh/entryway/c1", esphome::to_string(id(oh_all_brightness).state));
+              }              
+            }
+            else if (id(currentroom) == "Kitchen") {
+              if (id(oh_kitchen_c1).state >= 1) { 
+                id(mqtt_client).publish("oh/kitchen/c1", "0");
+              }
+              else {
+                id(mqtt_client).publish("oh/kitchen/c1", esphome::to_string(id(oh_all_brightness).state));                
+              }
+            }
+            else if (id(currentroom) == "Livingroom") {
+              if (id(oh_livingroom_c1).state >= 1) { 
+                id(mqtt_client).publish("oh/livingroom/c1", "0");
+              }
+              else {
+                id(mqtt_client).publish("oh/livingroom/c1", esphome::to_string(id(oh_all_brightness).state));                
+              }
+            }
+            else if (id(currentroom) == "BedroomE") {
+              if (id(oh_bedroomE_c1).state >= 1) { 
+                id(mqtt_client).publish("oh/bedroomE/c1", "0");
+              }
+              else {
+                id(mqtt_client).publish("oh/bedroomE/c1", esphome::to_string(id(oh_all_brightness).state));
+              }              
+            }
+            else if (id(currentroom) == "BedroomT") {
+              // No ceiling lights
+              id(disp1).set_component_value("home.b_ceiling", 0);             
+            }
+            else if (id(currentroom) == "Bathroom") {
+              //Ny kod måste skrivas för taklampan
+              //om Device=Bathroom, slå av relä
+              if (id(currentroom) == id(device).c_str()) {
+
+                if (id(relay_1).state == false and id(relay_2).state == false) {
+                    id(relay_1).turn_on();
+                    id(relay_2).turn_on();
+                    id(mqtt_client).publish("oh/$deviceroom/relay1", "100");
+                    id(mqtt_client).publish("oh/$deviceroom/relay2", "100");
+                    //id(disp1).set_component_value("home.b_ceiling", 0); 
+                    //id(disp1).set_component_value("home.n_ceiling", 0);
+                }
+                else {
+                    id(relay_1).turn_off();
+                    id(relay_2).turn_off();
+                    id(mqtt_client).publish("oh/$deviceroom/relay1", "0");
+                    id(mqtt_client).publish("oh/$deviceroom/relay2", "0");
+                    //id(disp1).set_component_value("home.b_ceiling", 1); 
+                    //id(disp1).set_component_value("home.n_ceiling", 100);
+                }
+              }
+              else {
+              //Om Device != Bathrrom slå av relä via MQTT?
+
+                if (id(oh_bathroom_relay1).state >= 1 or id(oh_bathroom_relay2).state >= 1) { 
+                id(mqtt_client).publish("oh/Bathroom/relay1", "0");
+                id(mqtt_client).publish("oh/Bathroom/relay2", "0");
+                }
+                else {
+                id(mqtt_client).publish("oh/Bathroom/relay1", "100");
+                id(mqtt_client).publish("oh/Bathroom/relay2", "100");
+                }
+
+              }
+
+            }
+  #Turn ON/OFF Table lights in current room     
+  - platform: nextion
+    internal: true
+    name: $device_name Table Button
+    id: nsp_table
+    page_id: 2
+    component_id: 2
+    on_release:
+      then:
+        - lambda: |-
+            if (id(currentroom) == "Entryway") {
+              //No table lights
+              id(disp1).set_component_value("b_table", 0); 
+            }
+            else if (id(currentroom) == "Kitchen") {
+              if (id(oh_kitchen_t1).state >= 1 or id(oh_kitchen_t2).state >= 1) { 
+                id(mqtt_client).publish("oh/kitchen/t1", "0");
+                id(mqtt_client).publish("oh/kitchen/t2", "0");
+              }
+              else {
+                id(mqtt_client).publish("oh/kitchen/t1", esphome::to_string(id(oh_all_brightness).state));
+                id(mqtt_client).publish("oh/kitchen/t2", esphome::to_string(id(oh_all_brightness).state));
+              }
+            }
+            else if (id(currentroom) == "Livingroom") {
+              if (id(oh_livingroom_t1).state >= 1 or id(oh_livingroom_t2).state >= 1) { 
+                id(mqtt_client).publish("oh/livingroom/t1", "0");
+                id(mqtt_client).publish("oh/livingroom/t2", "0");
+            }
+              else {
+                id(mqtt_client).publish("oh/livingroom/t1", esphome::to_string(id(oh_all_brightness).state));
+                id(mqtt_client).publish("oh/livingroom/t2", esphome::to_string(id(oh_all_brightness).state));
+
+              }
+            }
+            else if (id(currentroom) == "BedroomE") {
+              if (id(oh_bedroomE_t1).state >= 1 or id(oh_bedroomE_t2).state >= 1 or id(oh_bedroomE_t3).state >= 1 or id(oh_bedroomE_t4).state >= 1 or id(oh_bedroomE_t5).state >= 1) { 
+                id(mqtt_client).publish("oh/bedroomE/t1", "0");
+                id(mqtt_client).publish("oh/bedroomE/t2", "0");
+                id(mqtt_client).publish("oh/bedroomE/t3", "0");
+                id(mqtt_client).publish("oh/bedroomE/t4", "0");
+                id(mqtt_client).publish("oh/bedroomE/t5", "0");
+              }
+              else {
+                id(mqtt_client).publish("oh/bedroomE/t1", esphome::to_string(id(oh_all_brightness).state));
+                id(mqtt_client).publish("oh/bedroomE/t2", esphome::to_string(id(oh_all_brightness).state));
+                id(mqtt_client).publish("oh/bedroomE/t3", esphome::to_string(id(oh_all_brightness).state));
+                id(mqtt_client).publish("oh/bedroomE/t4", esphome::to_string(id(oh_all_brightness).state));
+                id(mqtt_client).publish("oh/bedroomE/t5", "1");
+              }              
+            }
+            else if (id(currentroom) == "BedroomT") {
+              if (id(oh_bedroomT_t1).state >= 1 or id(oh_bedroomT_t2).state >= 1) { 
+                id(mqtt_client).publish("oh/bedroomT/t1", "0");
+                id(mqtt_client).publish("oh/bedroomT/t2", "0");
+              }
+              else {
+                id(mqtt_client).publish("oh/bedroomT/t1", esphome::to_string(id(oh_all_brightness).state));
+                id(mqtt_client).publish("oh/bedroomT/t2", esphome::to_string(id(oh_all_brightness).state));
+
+              }              
+            }
+            else if (id(currentroom) == "Bathroom") {
+              if (id(oh_bathroom_t1).state >= 1) { 
+                id(mqtt_client).publish("oh/bathroom/t1", "0");
+              }
+              else {
+                id(mqtt_client).publish("oh/bathroom/t1", esphome::to_string(id(oh_all_brightness).state));
+              }
+
+            }    
+sensor:
+ 
+#  - platform: wifi_signal
+#    internal: true
+#    name: $device_name WiFi Signal
+#    update_interval: 60s
+
+#  - platform: ntc
+#    internal: true
+#    id: temperature
+#    sensor: resistance_sensor
+#   calibration:
+#      b_constant: 3950
+#      reference_temperature: 25°C
+#      reference_resistance: 10kOhm
+#    name: $device_name Temperature
+
+#  - platform: resistance
+#    internal: true
+#    id: resistance_sensor
+#    sensor: ntc_source
+#    configuration: DOWNSTREAM
+#   resistor: 11.2kOhm
+
+#  - platform: adc
+#    internal: true
+#    id: ntc_source
+#    pin: 38
+#    update_interval: 10s
+#    attenuation: 11db
+
+# Below all MQTT subscriptions. Each component represents one Item in Openhab. Most mqtt_subscription components also have 
+# their equivalent Nextion component on the display. Nextion button or variable for example.
+# As soon as an Item changes the state is sent on that Items topic. Esphome subscribs to those topics through the components below.
+# When a topic is updated an event is triggered with the help of esphome on_value parameter to update the sceen accordingly.
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Openhab All Brightness"
+    id: oh_all_brightness
+    topic: oh/all_brightness
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(mode) == "All Lights") {
+
+              id(disp1).set_component_value("home.n_bright", x);
+            }
+            else if (id(mode) == "Sound") {
+            
+            }
+            
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Openhab All Lights OnOff"
+    id: oh_all_lights
+    topic: oh/all_lights
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(mode) == "All Lights") {
+              if (x == 1) { 
+                id(disp1).set_component_picc("home.bright", 2);
+              }
+              else {
+                id(disp1).set_component_picc("home.bright", 1);
+              }
+            }
+            else {
+              //Mode is Sound, do not update icon
+            }
+
+            
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Openhab All Kelvin"
+    id: oh_all_kelvin
+    topic: oh/all_kelvin
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(mode) == "All Lights") {
+
+              id(disp1).set_component_value("home.n_kelvin", x);
+            }
+            else if (id(mode) == "Sound") {
+            
+            }
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: Openhab Bathroom Relay 1
+    id: oh_bathroom_relay1
+    topic: oh/Bathroom/relay1
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(device) == "Bathroom") {
+              if (x == 100) {
+                id(relay_1).turn_on();            
+              }
+              if (x == 0) {
+                id(relay_1).turn_off();              
+              }
+            }
+
+            else if (id(currentroom) == "Bathroom") {
+              if (id(oh_bathroom_relay1).state >= 1 ) { 
+                id(disp1).set_component_value("home.b_ceiling", 1); 
+                id(disp1).set_component_value("home.n_ceiling", x);
+
+              }
+              else {
+                if (id(oh_bathroom_relay1).state == 0 and id(oh_bathroom_relay2).state == 0) { 
+                  id(disp1).set_component_value("home.b_ceiling", 0); 
+                  id(disp1).set_component_value("home.n_ceiling", 0);
+                }
+              }
+            }
+            if (x==100) {
+              id(disp1).set_component_value("Bathroom.br_r1", 1); 
+            }
+            else {
+              id(disp1).set_component_value("Bathroom.br_r1", 0); 
+            }
+
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: Openhab $deviceroom Relay 2
+    id: oh_bathroom_relay2
+    topic: oh/Bathroom/relay2
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(device) == "Bathroom") {
+              if (x == 100) {
+                id(relay_2).turn_on();              
+              }
+              if (x == 0) {
+                id(relay_2).turn_off();              
+              }
+            }
+
+            else if (id(currentroom) == "Bathroom") {
+              if (id(oh_bathroom_relay2).state >= 1 ) { 
+                id(disp1).set_component_value("home.b_ceiling", 1); 
+                id(disp1).set_component_value("home.n_ceiling", x);
+                //id(tablemax) = x;
+              }
+              else {
+                if (id(oh_bathroom_relay1).state == 0 and id(oh_bathroom_relay2).state == 0) { 
+                  id(disp1).set_component_value("home.b_ceiling", 0); 
+                  id(disp1).set_component_value("home.n_ceiling", 0);
+                }
+              }
+            }
+            if (x==100) {
+              id(disp1).set_component_value("Bathroom.br_r2", 1); 
+            }
+            else {
+              id(disp1).set_component_value("Bathroom.br_r2", 0); 
+            }
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Standard Cups"
+    id: oh_standardcups
+    topic: oh/coffee/standardcups
+    on_value:
+      then: 
+        - lambda: |-
+            if (x == 1) {
+              id(disp1).set_component_value("coffee.bt0", 1);
+              id(disp1).set_component_value("coffee.bt1", 0);
+              id(disp1).set_component_value("coffee.bt2", 0);
+              id(disp1).set_component_value("coffee.bt3", 0);
+              id(disp1).set_component_value("coffee.bt4", 0);
+              id(disp1).set_component_value("coffee.bt5", 0);
+              id(disp1).set_component_value("coffee.bt6", 0);
+              id(disp1).set_component_value("coffee.bt7", 0);
+            }
+            else if (x == 2) {
+              id(disp1).set_component_value("coffee.bt0", 1);
+              id(disp1).set_component_value("coffee.bt1", 1);
+              id(disp1).set_component_value("coffee.bt2", 0);
+              id(disp1).set_component_value("coffee.bt3", 0);
+              id(disp1).set_component_value("coffee.bt4", 0);
+              id(disp1).set_component_value("coffee.bt5", 0);
+              id(disp1).set_component_value("coffee.bt6", 0);
+              id(disp1).set_component_value("coffee.bt7", 0);
+            }
+            else if (x == 3) {
+              id(disp1).set_component_value("coffee.bt0", 1);
+              id(disp1).set_component_value("coffee.bt1", 1);
+              id(disp1).set_component_value("coffee.bt2", 1);
+              id(disp1).set_component_value("coffee.bt3", 0);
+              id(disp1).set_component_value("coffee.bt4", 0);
+              id(disp1).set_component_value("coffee.bt5", 0);
+              id(disp1).set_component_value("coffee.bt6", 0);
+              id(disp1).set_component_value("coffee.bt7", 0);
+            }
+            else if (x == 4) {
+              id(disp1).set_component_value("coffee.bt0", 1);
+              id(disp1).set_component_value("coffee.bt1", 1);
+              id(disp1).set_component_value("coffee.bt2", 1);
+              id(disp1).set_component_value("coffee.bt3", 1);
+              id(disp1).set_component_value("coffee.bt4", 0);
+              id(disp1).set_component_value("coffee.bt5", 0);
+              id(disp1).set_component_value("coffee.bt6", 0);
+              id(disp1).set_component_value("coffee.bt7", 0);
+            }
+            else if (x == 5) {
+              id(disp1).set_component_value("coffee.bt0", 1);
+              id(disp1).set_component_value("coffee.bt1", 1);
+              id(disp1).set_component_value("coffee.bt2", 1);
+              id(disp1).set_component_value("coffee.bt3", 1);
+              id(disp1).set_component_value("coffee.bt4", 1);
+              id(disp1).set_component_value("coffee.bt5", 0);
+              id(disp1).set_component_value("coffee.bt6", 0);
+              id(disp1).set_component_value("coffee.bt7", 0);
+            }
+            else if (x == 6) {
+              id(disp1).set_component_value("coffee.bt0", 1);
+              id(disp1).set_component_value("coffee.bt1", 1);
+              id(disp1).set_component_value("coffee.bt2", 1);
+              id(disp1).set_component_value("coffee.bt3", 1);
+              id(disp1).set_component_value("coffee.bt4", 1);
+              id(disp1).set_component_value("coffee.bt5", 1);
+              id(disp1).set_component_value("coffee.bt6", 0);
+              id(disp1).set_component_value("coffee.bt7", 0);
+            }
+            else if (x == 7) {
+              id(disp1).set_component_value("coffee.bt0", 1);
+              id(disp1).set_component_value("coffee.bt1", 1);
+              id(disp1).set_component_value("coffee.bt2", 1);
+              id(disp1).set_component_value("coffee.bt3", 1);
+              id(disp1).set_component_value("coffee.bt4", 1);
+              id(disp1).set_component_value("coffee.bt5", 1);
+              id(disp1).set_component_value("coffee.bt6", 1);
+              id(disp1).set_component_value("coffee.bt7", 0);
+            }
+            else if (x == 8) {
+              id(disp1).set_component_value("coffee.bt0", 1);
+              id(disp1).set_component_value("coffee.bt1", 1);
+              id(disp1).set_component_value("coffee.bt2", 1);
+              id(disp1).set_component_value("coffee.bt3", 1);
+              id(disp1).set_component_value("coffee.bt4", 1);
+              id(disp1).set_component_value("coffee.bt5", 1);
+              id(disp1).set_component_value("coffee.bt6", 1);
+              id(disp1).set_component_value("coffee.bt7", 1);
+            }
+
+#Entryway
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Entryway Ceiling"
+    id: oh_entryway_c1
+    topic: oh/entryway/c1
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "Entryway") {
+              if (id(oh_entryway_c1).state >= 1 ) { 
+                id(disp1).set_component_value("home.b_ceiling", 1); 
+                id(disp1).set_component_value("home.n_ceiling", x);
+                id(ceilingmax) = x;
+              }
+              else {
+                if (id(oh_entryway_c1).state == 0) { 
+                  id(disp1).set_component_value("home.b_ceiling", 0); 
+                  id(disp1).set_component_value("home.n_ceiling", 0);
+                }
+              }
+            }
+            if (x > 0) {
+              id(disp1).set_component_value("Entryway.ew_c1", 1); 
+            }
+            else {
+              id(disp1).set_component_value("Entryway.ew_c1", 0); 
+            }
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Kitchen Ceiling"
+    id: oh_kitchen_c1
+    topic: oh/kitchen/c1
+    on_value:
+      then: 
+        - lambda: |-   
+            if (id(currentroom) == "Kitchen") {
+              if (id(oh_kitchen_c1).state >= 1 ) { 
+                id(disp1).set_component_value("home.b_ceiling", 1); 
+                id(disp1).set_component_value("home.n_ceiling", x);
+                id(ceilingmax) = x;
+              }
+              else {
+                if (id(oh_kitchen_c1).state == 0) { 
+                  id(disp1).set_component_value("home.b_ceiling", 0); 
+                  id(disp1).set_component_value("home.n_ceiling", 0);
+                }
+              }
+            }
+            if (x > 0) {
+              id(disp1).set_component_value("Kitchen.k_c1", 1); 
+            }
+            else {
+              id(disp1).set_component_value("Kitchen.k_c1", 0); 
+            }
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Kitchen Ledstrip"
+    id: oh_kitchen_t1
+    topic: oh/kitchen/t1
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "Kitchen") {
+              if (id(oh_kitchen_t1).state >= 1 ) { 
+                id(disp1).set_component_value("home.b_table", 1); 
+                id(disp1).set_component_value("home.n_table", x);
+                id(tablemax) = x;
+              }
+              else {
+                if (id(oh_kitchen_t1).state == 0 and id(oh_kitchen_t2).state == 0) { 
+                  id(disp1).set_component_value("home.b_table", 0); 
+                  id(disp1).set_component_value("home.n_table", 0);
+                }
+              }
+            }
+            if (x > 0) {
+              id(disp1).set_component_value("Kitchen.k_t1", 1); 
+            }
+            else {
+              id(disp1).set_component_value("Kitchen.k_t1", 0); 
+            }
+            
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Kitchen Island"
+    id: oh_kitchen_t2
+    topic: oh/kitchen/t2
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "Kitchen") {
+              if (id(oh_kitchen_t2).state >= 1 ) { 
+                id(disp1).set_component_value("home.b_table", 1); 
+                id(disp1).set_component_value("home.n_table", x);
+                id(tablemax) = x;
+              }
+              else {
+                if (id(oh_kitchen_t1).state == 0 and id(oh_kitchen_t2).state == 0) { 
+                  id(disp1).set_component_value("home.b_table", 0); 
+                  id(disp1).set_component_value("home.n_table", 0);
+                }
+              }
+            }
+            if (x > 0) {
+              id(disp1).set_component_value("Kitchen.k_t2", 1); 
+            }
+            else {
+              id(disp1).set_component_value("Kitchen.k_t2", 0); 
+            }
+
+#Livingroom
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Livingroom Ceiling"
+    id: oh_livingroom_c1
+    topic: oh/livingroom/c1
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "Livingroom") {
+              if (id(oh_livingroom_c1).state >= 1 ) { 
+                id(disp1).set_component_value("home.b_ceiling", 1); 
+                id(disp1).set_component_value("home.n_ceiling", x);
+                id(ceilingmax) = x;
+
+              }
+              else {
+                if (id(oh_livingroom_c1).state == 0) { 
+                  id(disp1).set_component_value("home.b_ceiling", 0); 
+                  id(disp1).set_component_value("home.n_ceiling", 0);
+                }
+              }
+            }
+            if (x > 0) {
+              id(disp1).set_component_value("Livingroom.lr_c1", 1); 
+            }
+            else {
+              id(disp1).set_component_value("Livingroom.lr_c1", 0); 
+            }
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Livingroom Lady"
+    id: oh_livingroom_t1
+    topic: oh/livingroom/t1
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "Livingroom" ) {
+              if (id(oh_livingroom_t1).state >= 1 ) { 
+                id(disp1).set_component_value("home.b_table", 1); 
+                id(disp1).set_component_value("home.n_table", x);
+                id(tablemax) = x;
+              }
+              else {
+                if (id(oh_livingroom_t1).state == 0 and id(oh_livingroom_t2).state == 0) { 
+                  id(disp1).set_component_value("home.b_table", 0); 
+                  id(disp1).set_component_value("home.n_table", 0);
+                }
+              }
+            }
+            if (x > 0) {
+              id(disp1).set_component_value("Livingroom.lr_t1", 1); 
+            }
+            else {
+              id(disp1).set_component_value("Livingroom.lr_t1", 0); 
+            }
+            
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Livingroom Window"
+    id: oh_livingroom_t2
+    topic: oh/livingroom/t2
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "Livingroom" ) {
+              if (id(oh_livingroom_t2).state >= 1 ) { 
+                id(disp1).set_component_value("home.b_table", 1); 
+                id(disp1).set_component_value("home.n_table", x);
+                id(tablemax) = x;
+              }
+              else {
+                if (id(oh_livingroom_t1).state == 0 and id(oh_livingroom_t2).state == 0) { 
+                  id(disp1).set_component_value("home.b_table", 0); 
+                  id(disp1).set_component_value("home.n_table", 0);
+                }
+              }
+            }
+            if (x > 0) {
+              id(disp1).set_component_value("Livingroom.lr_t2", 1); 
+            }
+            else {
+              id(disp1).set_component_value("Livingroom.lr_t2", 0); 
+            }
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Bathroom Mirror"
+    id: oh_bathroom_t1
+    topic: oh/bathroom/t1
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "Bathroom") {
+              if (id(oh_bathroom_t1).state >= 1 ) { 
+                id(disp1).set_component_value("home.b_table", 1); 
+                id(disp1).set_component_value("home.n_table", x);
+                id(tablemax) = x;
+              }
+              else {
+                if (id(oh_bathroom_t1).state == 0) { 
+                  id(disp1).set_component_value("home.b_table", 0); 
+                  id(disp1).set_component_value("home.n_table", 0);
+                }
+              }
+            }
+            if (x > 0) {
+              id(disp1).set_component_value("Bathroom.br_t1", 1); 
+            }
+            else {
+              id(disp1).set_component_value("Bathroom.br_t1", 0); 
+            }
+
+#Bedroom Erik
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Bedroom E Ceiling"
+    id: oh_bedroomE_c1
+    topic: oh/bedroomE/c1
+    on_value:
+      then: 
+        - lambda: |-        
+            if (id(currentroom) == "BedroomE") {
+              if (id(oh_bedroomE_c1).state >= 1 ) { 
+                id(disp1).set_component_value("home.b_ceiling", 1); 
+                id(disp1).set_component_value("home.n_ceiling", x);
+                id(ceilingmax) = x;
+              }
+              else {
+                if (id(oh_bedroomE_c1).state == 0) { 
+                  id(disp1).set_component_value("home.b_ceiling", 0); 
+                  id(disp1).set_component_value("home.n_ceiling", 0);
+                }
+              }
+            }
+            if (x > 0) {
+              id(disp1).set_component_value("BedroomE.brE_c1", 1); 
+            }
+            else {
+              id(disp1).set_component_value("BedroomE.brE_c1", 0); 
+            }
+            
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Bedroom E Globe"
+    id: oh_bedroomE_t1
+    topic: oh/bedroomE/t1
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "BedroomE" ) {
+              if (id(oh_bedroomE_t1).state >= 1 ) { 
+                id(disp1).set_component_value("home.b_table", 1); 
+                id(disp1).set_component_value("home.n_table", x);
+                id(tablemax) = x;
+              }
+              else {
+                if (id(oh_bedroomE_t1).state == 0 and id(oh_bedroomE_t2).state == 0 and id(oh_bedroomE_t3).state == 0 and id(oh_bedroomE_t4).state == 0 and id(oh_bedroomE_t5).state == 0) { 
+                  id(disp1).set_component_value("home.b_table", 0); 
+                  id(disp1).set_component_value("home.n_table", 0);
+                }
+              }
+            }
+            if (x > 0) {
+              id(disp1).set_component_value("BedroomE.brE_t1", 1); 
+            }
+            else {
+              id(disp1).set_component_value("BedroomE.brE_t1", 0); 
+            }
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Bedroom E Ledstrip"
+    id: oh_bedroomE_t2
+    topic: oh/bedroomE/t2
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "BedroomE" ) {
+              if (id(oh_bedroomE_t2).state >= 1 ) { 
+                id(disp1).set_component_value("home.b_table", 1); 
+                id(disp1).set_component_value("home.n_table", x);
+                id(tablemax) = x;
+              }
+              else {
+                if (id(oh_bedroomE_t1).state == 0 and id(oh_bedroomE_t2).state == 0 and id(oh_bedroomE_t3).state == 0 and id(oh_bedroomE_t4).state == 0 and id(oh_bedroomE_t5).state == 0) { 
+                  id(disp1).set_component_value("home.b_table", 0); 
+                  id(disp1).set_component_value("home.n_table", 0);
+                }
+              }
+            }
+            if (x > 0) {
+              id(disp1).set_component_value("BedroomE.brE_t2", 1); 
+            }
+            else {
+              id(disp1).set_component_value("BedroomE.brE_t2", 0); 
+            }
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Bedroom E Window"
+    id: oh_bedroomE_t3
+    topic: oh/bedroomE/t3
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "BedroomE" ) {
+              if (id(oh_bedroomE_t3).state >= 1 ) { 
+                id(disp1).set_component_value("home.b_table", 1); 
+                id(disp1).set_component_value("home.n_table", x);
+                id(tablemax) = x;
+              }
+              else {
+                if (id(oh_bedroomE_t1).state == 0 and id(oh_bedroomE_t2).state == 0 and id(oh_bedroomE_t3).state == 0 and id(oh_bedroomE_t4).state == 0 and id(oh_bedroomE_t5).state == 0) { 
+                  id(disp1).set_component_value("home.b_table", 0); 
+                  id(disp1).set_component_value("home.n_table", 0);
+                }
+              }
+            }
+            if (x > 0) {
+              id(disp1).set_component_value("BedroomE.brE_t3", 1); 
+            }
+            else {
+              id(disp1).set_component_value("BedroomE.brE_t3", 0); 
+            } 
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Bedroom E Moon"
+    id: oh_bedroomE_t4
+    topic: oh/bedroomE/t4
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "BedroomE" ) {
+              if (id(oh_bedroomE_t4).state >= 1 ) { 
+                id(disp1).set_component_value("home.b_table", 1); 
+                id(disp1).set_component_value("home.n_table", x);
+                id(tablemax) = x;
+              }
+              else {
+                if (id(oh_bedroomE_t1).state == 0 and id(oh_bedroomE_t2).state == 0 and id(oh_bedroomE_t3).state == 0 and id(oh_bedroomE_t4).state == 0 and id(oh_bedroomE_t5).state == 0) { 
+                  id(disp1).set_component_value("home.b_table", 0); 
+                  id(disp1).set_component_value("home.n_table", 0);
+                }
+              }
+            }
+            if (x > 0) {
+              id(disp1).set_component_value("BedroomE.brE_t4", 1); 
+            }
+            else {
+              id(disp1).set_component_value("BedroomE.brE_t4", 0); 
+            }
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Bedroom E Mirror"
+    id: oh_bedroomE_t5
+    topic: oh/bedroomE/t5
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "BedroomE" ) {
+              if (id(oh_bedroomE_t5).state >= 1 ) { 
+                id(disp1).set_component_value("home.b_table", 1); 
+                // not used on switch id(disp1).set_component_value("home.n_table", x);
+                // not used on switch id(tablemax) = x;
+              }
+              else {
+                if (id(oh_bedroomE_t1).state == 0 and id(oh_bedroomE_t2).state == 0 and id(oh_bedroomE_t3).state == 0 and id(oh_bedroomE_t4).state == 0 and id(oh_bedroomE_t5).state == 0) { 
+                  id(disp1).set_component_value("home.b_table", 0); 
+                  id(disp1).set_component_value("home.n_table", 0);
+                }
+              }
+            }
+            if (x > 0) {
+              id(disp1).set_component_value("BedroomE.brE_t5", 1); 
+            }
+            else {
+              id(disp1).set_component_value("BedroomE.brE_t5", 0); 
+            } 
+
+#Bedroom Tobias
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Bedroom T Window"
+    id: oh_bedroomT_t1
+    topic: oh/bedroomT/t1
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "BedroomT" ) {
+              if (id(oh_bedroomT_t1).state >= 1 ) { 
+                id(disp1).set_component_value("home.b_table", 1); 
+                id(disp1).set_component_value("home.n_table", x);
+                id(tablemax) = x;
+              }
+              else {
+                if (id(oh_bedroomT_t1).state == 0 and id(oh_bedroomT_t2).state == 0) { 
+                  id(disp1).set_component_value("home.b_table", 0); 
+                  id(disp1).set_component_value("home.n_table", 0);
+                }
+              }
+            }
+            if (x > 0) {
+              id(disp1).set_component_value("BedroomT.brT_t1", 1); 
+            }
+            else {
+              id(disp1).set_component_value("BedroomT.brT_t1", 0); 
+            }
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Bedroom T Tarnaby"
+    id: oh_bedroomT_t2
+    topic: oh/bedroomT/t2
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "BedroomT" ) {
+              if (id(oh_bedroomT_t2).state >= 1 ) { 
+                id(disp1).set_component_value("home.b_table", 1); 
+                id(disp1).set_component_value("home.n_table", x);
+                id(tablemax) = x;
+              }
+              else {
+                if (id(oh_bedroomT_t1).state == 0 and id(oh_bedroomT_t2).state == 0) { 
+                  id(disp1).set_component_value("home.b_table", 0); 
+                  id(disp1).set_component_value("home.n_table", 0);
+                }
+              }
+            }
+            if (x > 0) {
+              id(disp1).set_component_value("BedroomT.brT_t2", 1); 
+            }
+            else {
+              id(disp1).set_component_value("BedroomT.brT_t2", 0); 
+            }
+
+#Switches
+         
+      
+#Speakers
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Kitchen Speaker"
+    id: oh_kitchen_speaker_volume
+    topic: oh/kitchen/speaker/volume
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "Kitchen") {
+
+              if (id(mode) == "Sound") {
+                id(disp1).set_component_value("home.n_bright", x);
+              }
+            }
+        - script.execute: speaker_average
+
+            
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Livingroom Speaker"
+    id: oh_livingroom_speaker_volume
+    topic: oh/livingroom/speaker/volume
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "Livingroom") {
+
+              if (id(mode) == "Sound") {
+                id(disp1).set_component_value("home.n_bright", x);
+              }
+            }
+        - script.execute: speaker_average
+            
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Bedroom E Speaker"
+    id: oh_bedroomE_speaker_volume
+    topic: oh/bedroomE/speaker/volume
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "BedroomE") {
+
+              if (id(mode) == "Sound") {
+                id(disp1).set_component_value("home.n_bright", x);
+              }
+            }
+        - script.execute: speaker_average
+        
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Bedroom T Speaker"
+    id: oh_bedroomT_speaker_volume
+    topic: oh/bedroomT/speaker/volume
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "BedroomT") {
+
+              if (id(mode) == "Sound") {
+                id(disp1).set_component_value("home.n_bright", x);
+              }
+            }
+        - script.execute: speaker_average
+            
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Entryway Speaker"
+    id: oh_entryway_speaker_volume
+    topic: oh/entryway/speaker/volume
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "Entryway") {
+
+              if (id(mode) == "Sound") {
+                id(disp1).set_component_value("home.n_bright", x);
+              }
+            }
+        - script.execute: speaker_average
+            
+            
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Bathroom Speaker"
+    id: oh_bathroom_speaker_volume
+    topic: oh/bathroom/speaker/volume
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "Bathroom") {
+
+              if (id(mode) == "Sound") {
+                id(disp1).set_component_value("home.n_bright", x);
+              }
+            }
+        - script.execute: speaker_average
+
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Bedroom E Speaker Stop"
+    id: oh_bedroomE_speaker_stop
+    topic: oh/bedroomE/speaker/stop
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "BedroomE") {
+              if (id(mode) == "Sound") {
+                if (x == 1) {
+                  //Stopped
+                  id(disp1).set_component_picc("home.bright", 3);
+                }
+                else if (x == 0) {
+                  //Playing
+                  id(disp1).set_component_picc("home.bright", 4);
+                }
+              }
+            }
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "BedroomT Speaker Stop"
+    id: oh_bedroomT_speaker_stop
+    topic: oh/bedroomT/speaker/stop
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "BedroomT") {
+              if (id(mode) == "Sound") {
+                if (x == 1) {
+                  //Stopped
+                  id(disp1).set_component_picc("home.bright", 3);
+                }
+                else if (x == 0) {
+                  //Playing
+                  id(disp1).set_component_picc("home.bright", 4);
+                }
+              }
+            }
+            
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Bathroom Speaker Stop"
+    id: oh_bathroom_speaker_stop
+    topic: oh/bathroom/speaker/stop
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "Bathroom") {
+              if (id(mode) == "Sound") {
+                if (x == 1) {
+                  //Stopped
+                  id(disp1).set_component_picc("home.bright", 3);
+                }
+                else if (x == 0) {
+                  //Playing
+                  id(disp1).set_component_picc("home.bright", 4);
+                }
+              }
+            }
+            
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Kitchen Speaker Stop"
+    id: oh_kitchen_speaker_stop
+    topic: oh/kitchen/speaker/stop
+    on_value:
+      then: 
+        - lambda: |-
+            if (id(currentroom) == "Kitchen") {
+              if (id(mode) == "Sound") {
+                if (x == 1) {
+                  //Stopped
+                  id(disp1).set_component_picc("home.bright", 3);
+                }
+                else if (x == 0) {
+                  //Playing
+                  id(disp1).set_component_picc("home.bright", 4);
+                }
+              }
+            }
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Speaker Group Stop"
+    id: oh_speakergroup_stop
+    topic: oh/speakergroup/stop
+    on_value:
+      then: 
+        - lambda: |-
+            
+              if (id(mode) == "Sound") {
+                if (x == 1) {
+                  //Stopped
+                  id(disp1).set_component_picc("home.kelvin", 3);
+                }
+                else if (x == 0) {
+                  //Playing
+                  id(disp1).set_component_picc("home.kelvin", 4);
+                }
+              }
+              
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Outside Temperature"
+    id: oh_temp
+    topic: oh/temp
+    on_value:
+      then:
+        lambda: |-
+          id(disp1).set_component_text_printf("home.t_temp", "%.1f ""\xb0""C", id(oh_temp).state);
+
+
+
+
+#String Item in Openhab publishes to this topic. Used for dynamic events or just to control the nspanel from outside.
+text_sensor:
+  - platform: mqtt_subscribe
+    internal: true
+    name: "Event"
+    id: oh_event
+    topic: oh/event
+    on_value:
+      then:
+       - delay: 16ms
+       - lambda: |-
+            if (x == "hide") {
+              id(disp1).hide_component("p_event");
+  
+            }
+            else if (x == "ICON ON") {
+              id(oh_all_lights).state = 1;
+              id(disp1).set_component_picc("home.bright", 2);
+            }
+            else if (x == "ICON OFF") {
+              id(oh_all_lights).state = 0;
+              id(disp1).set_component_picc("home.bright", 1);
+            } 
+            else if (x == "readyforcoffee") 
+            {
+              id(disp1).set_backlight_brightness(1);
+              id(disp1).goto_page("coffee");
+            }
+            else if (x == "startpage_$node_name") {
+              id(disp1).goto_page("home");
+              id(event) = x;
+            }
+            else if (x == "startpage") {
+              id(disp1).goto_page("home");
+              id(event) = x;
+            }
+            else if (x == "unlock") {
+              id(disp1).goto_page("home");
+              id(disp1).show_component("p_event");
+              id(event) = x;
+            }
+            else if (x == "alarm") {
+              id(disp1).set_backlight_brightness(1);
+              id(disp1).goto_page("alarm");
+              id(event) = x;
+            }
+            else if (x == "uploadtft" or x == "uploadtft_$node_name") {
+              id(disp1)->upload_tft();
+            }
+            else if (x == "restart_$node_name") {
+              id(restartbutton).press();
+            }
+            
+
+  - platform: nextion
+    internal: true
+    nextion_id: disp1
+    name: "Variable Lights"
+    id: va_Lights
+    component_name: vaLights
+    on_value:
+      then:
+        lambda: |-
+          std::string str = x.c_str();
+          std::vector<std::string> v;
+          char * token;
+          char seps[] = ",";
+          token = strtok (&str[0],seps);
+          while (token != NULL)
+          {
+            v.push_back(token);
+            token = strtok (NULL, seps);
+          }
+          id(mqtt_client).publish(v[0], v[1]); 
+
+  - platform: nextion
+    internal: true
+    nextion_id: disp1
+    name: "Variable for Devices"
+    id: oh_va_devices
+    component_name: vaDevices
+    on_value:
+      then:
+        lambda: |-
+          std::string str = x.c_str();
+          std::vector<std::string> v;
+          char * token;
+          char seps[] = ",";
+          token = strtok (&str[0],seps);
+          while (token != NULL)
+          {
+            v.push_back(token);
+            token = strtok (NULL, seps);
+          }
+          if (v.size()>2) {
+            //Means that we received a HUE SAT BRIGHT value
+            std::string HSB = v[1];
+            HSB += ",";
+            HSB += v[2];
+            HSB += ",";
+            HSB += v[3];
+            
+            //Send to openhab state topic
+            id(mqtt_client).publish(v[0], HSB.c_str());
+            //Send to oh/devices to update all the other devices.
+            id(mqtt_client).publish("oh/devices", x.c_str());
+          }
+          else {          
+            //Send to openhab state topic
+            id(mqtt_client).publish(v[0], v[1]);
+            //Send to oh/devices to update all the other devices.
+            id(mqtt_client).publish("oh/devices", x.c_str());
+          }
+
+
+  - platform: nextion
+    internal: true
+    nextion_id: disp1
+    name: "Variable for Functions"
+    id: oh_va_functions
+    component_name: vaFunctions
+    on_value:
+      then:
+        lambda: |-
+            std::string received = x.c_str();
+            if (received == "screensaver") {
+              id(disp1).set_component_text("home.room", id(device).c_str());
+              id(currentroom) = id(device).c_str();
+              id(disp1).set_component_text("home.mode", "All Lights");
+              id(mode) = "All Lights";
+
+              id(update_room).execute();
+              id(update_mode).execute();
+            }
+            else if (received == "uploadtft") {
+              id(disp1)->upload_tft();
+            }            
+
+  - platform: mqtt_subscribe
+    internal: true
+    name: "MQTT for Devices"
+    id: oh_mqtt_devices
+    topic: oh/devices
+    on_value:
+      then: 
+        - lambda: |-
+            //Incoming message example:
+            //Livingroom.b_mute, 1  
+            //Livingroom, MUTE, 1
+            //Bedroom, MUTE, 1
+            std::string str = x.c_str();    
+            std::vector<std::string> v;
+            char * token;
+            char seps[] = ",";
+            token = strtok (&str[0],seps);
+            while (token != NULL)
+            {
+              v.push_back(token);
+              token = strtok (NULL, seps);
+            }
+            if (v.size()>2) {
+            //Means that we received a HUE SAT BRIGHT value
+
+            std::string removeLast = v[0];
+            if (!removeLast.empty()){
+                removeLast.pop_back();
+            }
+            std::string HUE = removeLast;
+            HUE += "H";
+            std::string SAT = removeLast;
+            SAT += "S";
+            std::string BRIGHT = removeLast;
+            BRIGHT += "B";
+
+            int value1 = atoi(v[1].c_str());
+            int value2 = atoi(v[2].c_str());
+            int value3 = atoi(v[3].c_str());
+            id(disp1).set_component_value(HUE.c_str(), value1);
+            id(disp1).set_component_value(SAT.c_str(), value2);
+            id(disp1).set_component_value(BRIGHT.c_str(), value3);
+            }
+            else {
+            int value1 = atoi(v[1].c_str());
+            
+            //Example of set_component_value:"page.button", value1 as integer
+            //id(disp1).set_component_value("home.b_ceiling", 0); 
+            id(disp1).set_component_value(v[0].c_str(), value1);
+            }
+
+# Define some outputs
+switch:
+  # The two relays
+  - platform: gpio
+    internal: true
+    name: $device_name Relay 1
+    id: relay_1
+    pin:
+      number: 22
+    on_turn_off:
+      then:
+        - lambda: |-
+            if (id(device) == "Bathroom") {
+              //id(mqtt_client).publish("oh/$deviceroom/relay1", "0");
+              //id(oh_bathroom_relay1).publish_state(0);
+              id(physical_switch).execute();         
+            }
+            else {
+              
+            }
+
+    on_turn_on: 
+      then:
+        - lambda: |-
+            if (id(device) == "Bathroom") {
+              //id(mqtt_client).publish("oh/$deviceroom/relay1", "100");
+              //id(oh_bathroom_relay1).publish_state(100);
+              id(physical_switch).execute();         
+            }
+            else {
+              
+            }
+      
+  - platform: gpio
+    internal: true
+    name: $device_name Relay 2
+    id: relay_2
+    pin:
+      number: 19
+    on_turn_off:
+      then:
+        - lambda: |-
+            if (id(device) == "Bathroom") {
+              //id(mqtt_client).publish("oh/$deviceroom/relay2", "0");
+              //id(oh_bathroom_relay2).publish_state(0);
+              id(physical_switch).execute();         
+            }
+            else {
+              
+            }
+
+    on_turn_on: 
+      then:
+        - lambda: |-
+            if (id(device) == "Bathroom") {
+              //id(mqtt_client).publish("oh/$deviceroom/relay2", "100");
+              //id(oh_bathroom_relay2).publish_state(100);
+              id(physical_switch).execute();         
+            }
+            else {
+              
+            }
+
+
+  # Pin 4 always needs to be on to power up the display
+  - platform: gpio
+    internal: true
+    id: screen_power
+    entity_category: config
+    pin:
+      number: 4
+      inverted: true
+    restore_mode: ALWAYS_ON
+
+# Configure UART for communicating with the screen
+uart:
+  id: tf_uart
+  tx_pin: 16
+  rx_pin: 17
+  baud_rate: 115200
+
+# Configure the screen itself
+display:
+  - platform: nextion
+    id: disp1
+    uart_id: tf_uart
+    tft_url: http://192.168.32.21:8080/hmi.tft
+    # A little fun...
+    on_setup:
+      then:
+         - lambda: 'id(disp1).goto_page("bootscreen");'
+         - lambda: 'id(disp1).set_component_text("home.room", id(currentroom).c_str());'
+         - lambda: 'id(disp1).set_component_text("home.mode", id(mode).c_str());'
+
+# A reboot button is always useful
+button:
+  - platform: restart
+    internal: true
+    name: Restart $device_name
+    id: restartbutton
+
+#number:
+#  platform: template
+#  internal: true
+#  name: $device_name Brightness
+#  id: brightness
+#  entity_category: config
+#  unit_of_measurement: '%'
+#  min_value: 0
+#  max_value: 100
+#  step: 1
+#  initial_value: 30
+#  set_action:
+#    then:
+#      - lambda: 'id(disp1).set_backlight_brightness(x/100);'
+
+# Configure the internal bleeper
+#output:
+#  - platform: ledc
+#    id: buzzer_out
+#    pin:
+#      number: 21
+
+# Enable ringtone music support
+#rtttl:
+#  id: buzzer
+#  output: buzzer_out
