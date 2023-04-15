@@ -43,8 +43,8 @@ ota:
 
 mqtt:
   broker: 192.168.32.2
-  username: openhabian
-  password: Superjanne!1
+  username: username
+  password: password
   id: mqtt_client
   discovery: false
   will_message:
